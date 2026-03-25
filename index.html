@@ -185,7 +185,7 @@ let html = "<h3>Receitas</h3>";
 receitas.forEach((r,i)=>{
 html += `
 <p>${r.desc} — R$ ${r.valor.toFixed(2)}
-<button class="btn-excluir" onclick="removerReceita(${i})">X</button>
+<span onclick="removerReceita(${i})" style="cursor:pointer;">🗑️</span>
 </p>`;
 });
 
