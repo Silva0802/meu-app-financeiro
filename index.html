@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Meu Controle Financeiro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial; margin: 0; background: #111; color: #fff; }
+    header { background: #222; padding: 15px; text-align: center; font-size: 20px; }
+    .container { padding: 15px; }
+    .card { background: #1e1e1e; padding: 15px; margin-bottom: 10px; border-radius: 10px; }
+    input, select, button {
+      width: 100%; padding: 10px; margin-top: 5px;
+      border-radius: 8px; border: none;
+    }
+    button { background: #00c853; color: white; font-weight: bold; }
+    .red { color: #ff5252; }
+    .green { color: #00e676; }
+    .yellow { color: #ffd740; }
+  </style>
+</head>
+
+<body>
+
+<header>💰 Meu Financeiro</header>
+
+<div class="container">
+
+  <div class="card">
+    <h3>Saldo</h3>
+    <p id="saldo">R$ 0</p>
+  </div>
+
+  <div class="card">
+    <h3>Resumo</h3>
+    <p class="green">Pago: R$ <span id="pago">0</span></p>
+    <p class="yellow">Agendado: R$ <span id="agendado">0</span></p>
+    <p class="red">Pendente: R$ <span id="pendente">0</span></p>
+  </div>
+
+  <div class="card">
+    <h3>Nova Despesa</h3>
+
+    <input id="nome" placeholder="Nome da despesa">
+    <input id="valor" type="number" placeholder="Valor total">
+
+    <select id="status">
+      <option value="pendente">Pendente</option>
+      <option value="agendado">Agendado</option>
+      <option value="pago">Pago</option>
+    </select>
+
+    <select id="cartao">
+      <option>Dinheiro</option>
+      <option>Visa</option>
+      <option>Elo</option>
+      <option>Hipercard</option>
+    </select>
+
+    <select id="responsavel">
+      <option value="meu">Meu</option>
+      <option value="outro">Outro</option>
+    </select>
+
+    <input id="parcelas" type="number" placeholder="Parcelas (ex: 3)">
+
+    <button onclick="addDespesa()">Salvar</button>
+  </div>
+
+  <div class="card">
+    <h3>Receita</h3>
+    <input id="receitaInput" type="number" placeholder="Valor da receita">
+    <button onclick="setReceita()">Salvar Receita</button>
+  </div>
+
+</div>
+
+<script>
+let despesas = JSON.parse(localStorage.getItem("despesas")) || [];
+let receita = Number(localStorage.getItem("receita")) || 0;
+
+function salvar() {
+  localStorage.setItem("despesas", JSON.stringify(despesas));
+  localStorage.setItem("receita", receita);
+  atualizar();
+}
+
+function addDespesa() {
+  let nome = document.getElementById("nome").value;
+  let valor = Number(document.getElementById("valor").value);
+  let status = document.getElementById("status").value;
+  let responsavel = document.getElementById("responsavel").value;
+  let parcelas = Number(document.getElementById("parcelas").value) || 1;
+
+  for (let i = 0; i < parcelas; i++) {
+    despesas.push({ nome, valor: valor/parcelas, status, responsavel });
+  }
+
+  salvar();
+}
+
+function setReceita() {
+  receita = Number(document.getElementById("receitaInput").value);
+  salvar();
+}
+
+function atualizar() {
+  let pago = 0, agendado = 0, pendente = 0;
+
+  despesas.forEach(d => {
+    if (d.responsavel !== "meu") return;
+
+    if (d.status === "pago") pago += d.valor;
+    if (d.status === "agendado") agendado += d.valor;
+    if (d.status === "pendente") pendente += d.valor;
+  });
+
+  document.getElementById("pago").innerText = pago.toFixed(2);
+  document.getElementById("agendado").innerText = agendado.toFixed(2);
+  document.getElementById("pendente").innerText = pendente.toFixed(2);
+
+  let saldo = receita - (pago + agendado + pendente);
+  let saldoEl = document.getElementById("saldo");
+
+  saldoEl.innerText = "R$ " + saldo.toFixed(2);
+  saldoEl.className = saldo >= 0 ? "green" : "red";
+}
+
+atualizar();
+</script>
+
+</body>
+</html>
