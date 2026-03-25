@@ -69,11 +69,16 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 
 <div id="lista" class="card hidden"></div>
 
-<div class="card">
+<!-- BOTÃO NOVA DESPESA -->
+<div class="card" onclick="toggleForm()">
+<h3>➕ Nova Despesa</h3>
+</div>
+
+<!-- FORMULÁRIO ESCONDIDO -->
+<div id="formDespesa" class="card hidden">
 <h3>Nova Despesa</h3>
 
 <input id="nome" placeholder="Nome">
-
 <input id="valor" type="number" placeholder="Valor total">
 
 <select id="status">
@@ -95,8 +100,7 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 </select>
 
 <input id="pessoa" placeholder="Nome da pessoa (se outro)">
-
-<input id="parcelas" type="number" placeholder="Parcelas (ex: 3)">
+<input id="parcelas" type="number" placeholder="Parcelas">
 
 <button onclick="add()">Salvar</button>
 </div>
@@ -104,7 +108,7 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 <div class="card">
 <h3>Receita</h3>
 <input id="receitaInput" type="number" placeholder="Valor">
-<button onclick="salvarReceita()">Salvar Receita</button>
+<button onclick="salvarReceita()">Adicionar Receita</button>
 </div>
 
 </div>
@@ -118,6 +122,11 @@ function salvar(){
 localStorage.setItem("despesas", JSON.stringify(despesas));
 localStorage.setItem("receita", receita);
 atualizar();
+}
+
+function toggleForm(){
+let f = document.getElementById("formDespesa");
+f.classList.toggle("hidden");
 }
 
 function add(){
@@ -139,11 +148,14 @@ pessoa
 }
 
 salvar();
+alert("Despesa salva!");
 }
 
 function salvarReceita(){
-receita = Number(document.getElementById("receitaInput").value);
+let valor = Number(document.getElementById("receitaInput").value);
+receita += valor; // 🔥 AGORA SOMA
 salvar();
+alert("Receita adicionada!");
 }
 
 function atualizar(){
