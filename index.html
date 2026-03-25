@@ -218,10 +218,12 @@ toggleReceitas();
 }
 
 function removerReceita(i){
-receitas.splice(i,1);
-salvar();
-toggleReceitas();
-toggleReceitas();
+if(confirm("Deseja realmente excluir esta receita?")){
+  receitas.splice(i,1);
+  salvar();
+  toggleReceitas();
+  toggleReceitas();
+}
 }
 
 function atualizar(){
