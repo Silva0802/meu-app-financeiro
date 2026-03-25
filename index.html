@@ -9,12 +9,12 @@
 body { font-family: Arial; background:#111; color:#fff; margin:0; }
 header { text-align:center; padding:15px; background:#222; }
 
-.container { padding:12px; }
+.container { padding:15px; }
 
 .grid {
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:12px;
+  gap:15px;
 }
 
 .card {
@@ -36,15 +36,22 @@ input, select, button {
 }
 
 button { background:#00c853; color:#fff; font-weight:bold; }
-  .btn-excluir {
-  background:#d50000;
+
+.item {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
 
+.icons span {
+  margin-left:10px;
+  cursor:pointer;
+}
+
+.hidden{display:none;}
 .green{color:#00e676;}
 .red{color:#ff5252;}
 .yellow{color:#ffd740;}
-
-.hidden{display:none;}
 </style>
 </head>
 
@@ -84,10 +91,8 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 </div>
 
 <div id="lista" class="card hidden"></div>
-
 <div id="painelReceitas" class="card hidden"></div>
 
-<!-- NOVA DESPESA -->
 <div class="card" onclick="toggleForm()">
 <h3>➕ Nova Despesa</h3>
 </div>
@@ -102,15 +107,7 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 <option value="pago">Pago</option>
 </select>
 
-<select id="responsavel">
-<option value="meu">Meu</option>
-<option value="outro">Outro</option>
-</select>
-
-<input id="pessoa" placeholder="Nome da pessoa">
-<input id="parcelas" type="number" placeholder="Parcelas">
-
-<button onclick="add()">Salvar</button>
+<button onclick="salvarDespesa()">Salvar</button>
 </div>
 
 </div>
@@ -120,6 +117,9 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 let despesas = JSON.parse(localStorage.getItem("despesas")) || [];
 let receitas = JSON.parse(localStorage.getItem("receitas")) || [];
 
+let editDespesa = null;
+let editReceita = null;
+
 function salvar(){
 localStorage.setItem("despesas", JSON.stringify(despesas));
 localStorage.setItem("receitas", JSON.stringify(receitas));
@@ -128,28 +128,40 @@ atualizar();
 
 function toggleForm(){
 document.getElementById("formDespesa").classList.toggle("hidden");
+editDespesa = null;
 }
 
-function add(){
+function salvarDespesa(){
 let nome = document.getElementById("nome").value;
 let valor = Number(document.getElementById("valor").value);
 let status = document.getElementById("status").value;
-let responsavel = document.getElementById("responsavel").value;
-let pessoa = document.getElementById("pessoa").value;
-let parcelas = Number(document.getElementById("parcelas").value) || 1;
 
-for(let i=1;i<=parcelas;i++){
-despesas.push({
-nome: nome + " ("+i+"/"+parcelas+")",
-valor: valor/parcelas,
-status,
-responsavel,
-pessoa
-});
+if(editDespesa !== null){
+despesas[editDespesa] = {nome, valor, status};
+} else {
+despesas.push({nome, valor, status});
 }
 
 salvar();
-alert("Despesa salva!");
+toggleForm();
+}
+
+function editarDespesa(i){
+let d = despesas[i];
+
+document.getElementById("nome").value = d.nome;
+document.getElementById("valor").value = d.valor;
+document.getElementById("status").value = d.status;
+
+editDespesa = i;
+document.getElementById("formDespesa").classList.remove("hidden");
+}
+
+function removerDespesa(i){
+if(confirm("Excluir despesa?")){
+despesas.splice(i,1);
+salvar();
+}
 }
 
 function mostrarLista(tipo){
@@ -161,32 +173,34 @@ let html="<h3>"+tipo.toUpperCase()+"</h3>";
 despesas.forEach((d,i)=>{
 if(d.status===tipo){
 html+=`
-<p>${d.nome} - R$ ${d.valor.toFixed(2)}
-<button onclick="remover(${i})">X</button>
-</p>`;
+<div class="item">
+<span>${d.nome} - R$ ${d.valor.toFixed(2)}</span>
+<div class="icons">
+<span onclick="editarDespesa(${i})">✏️</span>
+<span onclick="removerDespesa(${i})">🗑️</span>
+</div>
+</div>`;
 }
 });
 
 lista.innerHTML=html;
 }
 
-function remover(i){
-despesas.splice(i,1);
-salvar();
-}
-
 function toggleReceitas(){
 let painel = document.getElementById("painelReceitas");
-
 painel.classList.toggle("hidden");
 
 let html = "<h3>Receitas</h3>";
 
 receitas.forEach((r,i)=>{
 html += `
-<p>${r.desc} — R$ ${r.valor.toFixed(2)}
-<span onclick="removerReceita(${i})" style="cursor:pointer;">🗑️</span>
-</p>`;
+<div class="item">
+<span>${r.desc} — R$ ${r.valor.toFixed(2)}</span>
+<div class="icons">
+<span onclick="editarReceita(${i})">✏️</span>
+<span onclick="removerReceita(${i})">🗑️</span>
+</div>
+</div>`;
 });
 
 html += `
@@ -195,7 +209,7 @@ html += `
 <div id="formReceita" class="hidden">
 <input id="descReceita" placeholder="Descrição">
 <input id="valorReceita" type="number" placeholder="Valor">
-<button onclick="addReceita()">Salvar</button>
+<button onclick="salvarReceita()">Salvar</button>
 </div>
 `;
 
@@ -204,25 +218,44 @@ painel.innerHTML = html;
 
 function mostrarFormReceita(){
 document.getElementById("formReceita").classList.remove("hidden");
+editReceita = null;
 }
 
-function addReceita(){
+function salvarReceita(){
 let desc = document.getElementById("descReceita").value;
 let valor = Number(document.getElementById("valorReceita").value);
 
+if(editReceita !== null){
+receitas[editReceita] = {desc, valor};
+} else {
 receitas.push({desc, valor});
+}
 
 salvar();
 toggleReceitas();
 toggleReceitas();
 }
 
+function editarReceita(i){
+let r = receitas[i];
+
+toggleReceitas();
+toggleReceitas();
+
+setTimeout(()=>{
+document.getElementById("descReceita").value = r.desc;
+document.getElementById("valorReceita").value = r.valor;
+editReceita = i;
+document.getElementById("formReceita").classList.remove("hidden");
+},100);
+}
+
 function removerReceita(i){
-if(confirm("Deseja realmente excluir esta receita?")){
-  receitas.splice(i,1);
-  salvar();
-  toggleReceitas();
-  toggleReceitas();
+if(confirm("Excluir receita?")){
+receitas.splice(i,1);
+salvar();
+toggleReceitas();
+toggleReceitas();
 }
 }
 
@@ -233,8 +266,6 @@ let receitaTotal = receitas.reduce((t,r)=> t+r.valor, 0);
 let pago=0, agendado=0, pendente=0;
 
 despesas.forEach(d=>{
-if(d.responsavel!=="meu") return;
-
 if(d.status==="pago") pago+=d.valor;
 if(d.status==="agendado") agendado+=d.valor;
 if(d.status==="pendente") pendente+=d.valor;
