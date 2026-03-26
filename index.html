@@ -21,6 +21,7 @@ header { text-align:center; padding:15px; background:#222; }
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:10px;
+  text-align: center;
 }
 
 .card {
@@ -40,14 +41,17 @@ input, select, button {
   margin-top:5px;
   border-radius:6px;
   border:none;
+  box-sizing: border-box;
 }
 
-button { background:#00c853; color:#fff; font-weight:bold; }
+button { background:#00c853; color:#fff; font-weight:bold; cursor:pointer; }
 
 .item {
   display:flex;
   justify-content:space-between;
   margin-bottom:6px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 5px;
 }
 
 .icons span {
@@ -70,23 +74,23 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 <div class="grid3">
 <div class="card" onclick="toggleReceitas()">
 <h3>Receitas</h3>
-<p id="receitaTotal">0</p>
+<p id="receitaTotal">R$ 0.00</p>
 </div>
 
 <div class="card" onclick="toggleDespesas()">
 <h3>Despesas</h3>
-<p id="gastosTotal">0</p>
+<p id="gastosTotal">R$ 0.00</p>
 </div>
 
 <div class="card">
 <h3>Saldo</h3>
-<p id="saldo">0</p>
+<p id="saldo">R$ 0.00</p>
 </div>
 </div>
 
 <div class="grid2">
-<div class="card greenCard" onclick="toggleFormReceita()"> Receita</div>
-<div class="card redCard" onclick="toggleFormDespesa()"> Despesa</div>
+<div class="card greenCard" onclick="toggleFormReceita()">Receita</div>
+<div class="card redCard" onclick="toggleFormDespesa()">Despesa</div>
 </div>
 
 <div id="formReceita" class="card hidden">
@@ -108,6 +112,14 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 
 <label>Data</label>
 <input id="data" type="date">
+
+<label>Categoria</label>
+<select id="categoria">
+  <option value="Fixa">Despesa Fixa</option>
+  <option value="Cartão">Cartão</option>
+  <option value="Boleto">Boleto</option>
+  <option value="Outros">Outros</option>
+</select>
 
 <label>Status</label>
 <select id="status">
@@ -140,59 +152,25 @@ atualizar();
 
 function msg(t){ alert(t); }
 
-// 🔥 NOVO: CONTROLE GLOBAL
-function fecharTudo(){
-document.getElementById("formReceita").classList.add("hidden");
-document.getElementById("formDespesa").classList.add("hidden");
-document.getElementById("listaReceitas").classList.add("hidden");
-document.getElementById("listaDespesas").classList.add("hidden");
-}
-
-// TOGGLES CORRIGIDOS
+// TOGGLES
 function toggleFormReceita(){
-let el = document.getElementById("formReceita");
-
-if(!el.classList.contains("hidden")){
-el.classList.add("hidden");
-} else {
-fecharTudo();
-el.classList.remove("hidden");
-}
+document.getElementById("formReceita").classList.toggle("hidden");
 }
 
 function toggleFormDespesa(){
-let el = document.getElementById("formDespesa");
-
-if(!el.classList.contains("hidden")){
-el.classList.add("hidden");
-} else {
-fecharTudo();
-el.classList.remove("hidden");
-}
+document.getElementById("formDespesa").classList.toggle("hidden");
 }
 
 function toggleReceitas(){
-let el = document.getElementById("listaReceitas");
-
-if(!el.classList.contains("hidden")){
-el.classList.add("hidden");
-} else {
-fecharTudo();
-el.classList.remove("hidden");
+let div = document.getElementById("listaReceitas");
+div.classList.toggle("hidden");
 renderReceitas();
-}
 }
 
 function toggleDespesas(){
-let el = document.getElementById("listaDespesas");
-
-if(!el.classList.contains("hidden")){
-el.classList.add("hidden");
-} else {
-fecharTudo();
-el.classList.remove("hidden");
+let div = document.getElementById("listaDespesas");
+div.classList.toggle("hidden");
 renderDespesas();
-}
 }
 
 // RECEITAS
@@ -220,7 +198,6 @@ msg("Salvo!");
 
 function renderReceitas(){
 let div = document.getElementById("listaReceitas");
-
 let html="<h3>Receitas</h3>";
 
 receitas.forEach((r,i)=>{
@@ -242,7 +219,7 @@ let r = receitas[i];
 document.getElementById("descReceita").value = r.desc;
 document.getElementById("valorReceita").value = r.valor;
 editReceitaIndex = i;
-toggleFormReceita();
+if(document.getElementById("formReceita").classList.contains("hidden")) toggleFormReceita();
 }
 
 function removerReceita(i){
@@ -256,28 +233,21 @@ msg("Excluído!");
 
 // DESPESAS
 function add(){
-
 let nome = document.getElementById("nome").value;
 let valor = Number(document.getElementById("valor").value);
 let data = document.getElementById("data").value;
-  <label>Categoria</label>
-<select id="categoria">
-  <option value="Fixa">Despesa Fixa</option>
-  <option value="Cartão">Cartão</option>
-  <option value="Boleto">Boleto</option>
-  <option value="Outros">Outros</option>
-</select>
 let status = document.getElementById("status").value;
+let categoria = document.getElementById("categoria").value;
 
 if(!nome) return msg("Preencha nome");
 if(!valor) return msg("Preencha valor");
 if(!data) return msg("Preencha data");
 
 if(editIndex !== null){
-despesas[editIndex] = {nome, valor, data, status};
+despesas[editIndex] = {nome, valor, data, status, categoria};
 editIndex = null;
 } else {
-despesas.push({nome, valor, data, status});
+despesas.push({nome, valor, data, status, categoria});
 }
 
 document.getElementById("nome").value="";
@@ -291,16 +261,14 @@ msg("Salvo!");
 
 function renderDespesas(){
 let div = document.getElementById("listaDespesas");
-
 let html="<h3>Despesas</h3>";
 
 despesas.forEach((d,i)=>{
 html+=`
 <div class="item">
-<span>${d.nome} - R$ ${d.valor.toFixed(2)}</span>
+<span><strong>[${d.categoria || 'Geral'}]</strong> ${d.nome} - R$ ${d.valor.toFixed(2)}</span>
 <div class="icons">
 <span onclick="pagar(${i})">🅿️</span>
-<span onclick="agendar(${i})">🅰️</span>
 <span onclick="editar(${i})">✏️</span>
 <span onclick="remover(${i})">🗑️</span>
 </div>
@@ -318,24 +286,16 @@ renderDespesas();
 }
 }
 
-function agendar(i){
-if(confirm("Marcar como AGENDADO?")){
-despesas[i].status="agendado";
-salvar();
-renderDespesas();
-}
-}
-
 function editar(i){
 let d = despesas[i];
-
 document.getElementById("nome").value = d.nome;
 document.getElementById("valor").value = d.valor;
 document.getElementById("data").value = d.data;
 document.getElementById("status").value = d.status;
+document.getElementById("categoria").value = d.categoria || "Outros";
 
 editIndex = i;
-toggleFormDespesa();
+if(document.getElementById("formDespesa").classList.contains("hidden")) toggleFormDespesa();
 }
 
 function remover(i){
@@ -349,7 +309,6 @@ msg("Excluído!");
 
 // TOTAL
 function atualizar(){
-
 let receitaTotal = receitas.reduce((t,r)=> t+r.valor, 0);
 let gastosTotal = despesas.reduce((t,d)=> t+d.valor, 0);
 
@@ -357,7 +316,6 @@ document.getElementById("receitaTotal").innerText="R$ "+receitaTotal.toFixed(2);
 document.getElementById("gastosTotal").innerText="R$ "+gastosTotal.toFixed(2);
 
 let saldo=receitaTotal-gastosTotal;
-
 let saldoEl=document.getElementById("saldo");
 saldoEl.innerText="R$ "+saldo.toFixed(2);
 saldoEl.className=saldo>=0?"green":"red";
