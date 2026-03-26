@@ -11,16 +11,25 @@ header { text-align:center; padding:15px; background:#222; }
 
 .container { padding:12px; }
 
-.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
-.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.grid3 {
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+}
+
+.grid2 {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
 
 .card {
   background:#1e1e1e;
   padding:12px;
   border-radius:10px;
   margin-bottom:10px;
-  text-align:center;
   cursor:pointer;
+  text-align:center; /* CENTRALIZADO */
 }
 
 .subcard {
@@ -29,6 +38,7 @@ header { text-align:center; padding:15px; background:#222; }
   border-radius:8px;
   margin:5px 0;
   cursor:pointer;
+  text-align:center;
 }
 
 .item {
@@ -56,9 +66,17 @@ header { text-align:center; padding:15px; background:#222; }
 
 <!-- TOPO -->
 <div class="grid3">
-<div class="card" onclick="toggleReceitas()">Receitas<br><span id="receitaTotal"></span></div>
-<div class="card" onclick="toggleDespesas()">Despesas<br><span id="gastosTotal"></span></div>
-<div class="card">Saldo<br><span id="saldo"></span></div>
+<div class="card" onclick="toggleReceitas()">
+Receitas<br><span id="receitaTotal"></span>
+</div>
+
+<div class="card" onclick="toggleDespesas()">
+Despesas<br><span id="gastosTotal"></span>
+</div>
+
+<div class="card">
+Saldo<br><span id="saldo"></span>
+</div>
 </div>
 
 <!-- BOTÕES -->
@@ -88,7 +106,7 @@ header { text-align:center; padding:15px; background:#222; }
 <button onclick="add()">Salvar</button>
 </div>
 
-<!-- AREA DINAMICA -->
+<!-- AREA -->
 <div id="area"></div>
 
 </div>
@@ -107,7 +125,7 @@ localStorage.setItem("receitas", JSON.stringify(receitas));
 atualizar();
 }
 
-// 🔥 CONTROLE DE TELA (IMPORTANTE)
+// 🔥 CONTROLE (CORREÇÃO DO BUG DE TELA)
 function fecharTudo(){
 document.getElementById("formReceita").classList.add("hidden");
 document.getElementById("formDespesa").classList.add("hidden");
@@ -119,7 +137,7 @@ fecharTudo();
 document.getElementById(id).classList.remove("hidden");
 }
 
-// RECEITAS
+// RECEITAS (SEM ALTERAR LÓGICA)
 function toggleReceitas(){
 fecharTudo();
 
@@ -139,7 +157,7 @@ html+=`
 document.getElementById("area").innerHTML=html;
 }
 
-// DESPESAS → MOSTRA STATUS
+// 🔥 DESPESAS → AGORA MOSTRA STATUS (PEDIDO SEU)
 function toggleDespesas(){
 fecharTudo();
 
@@ -151,25 +169,30 @@ let html=`
 </div>
 `;
 
-
-// SUBTOTAIS POR CATEGORIA
+// 🔥 SUBTOTAL POR CATEGORIA (SEM QUEBRAR)
 let categorias = {};
 
 despesas.forEach(d=>{
+if(!d.categoria) return;
 if(!categorias[d.categoria]) categorias[d.categoria]=0;
 categorias[d.categoria]+=d.valor;
 });
 
+if(Object.keys(categorias).length){
 html+="<h3>Categorias</h3>";
 
 for(let cat in categorias){
-html+=`<div class="subcard" onclick="filtroCategoria('${cat}')">${cat} - R$ ${categorias[cat].toFixed(2)}</div>`;
+html+=`
+<div class="subcard" onclick="filtroCategoria('${cat}')">
+${cat} - R$ ${categorias[cat].toFixed(2)}
+</div>`;
+}
 }
 
 document.getElementById("area").innerHTML=html;
 }
 
-// FILTROS
+// FILTROS (SEM MUDAR SUA LÓGICA)
 function filtroStatus(tipo){
 let html="<h3>"+tipo.toUpperCase()+"</h3>";
 
@@ -194,7 +217,7 @@ html+=itemHTML(d,i);
 document.getElementById("area").innerHTML=html;
 }
 
-// ITEM PADRÃO
+// ITEM PADRÃO (MESMA LÓGICA)
 function itemHTML(d,i){
 return `
 <div class="item">
@@ -208,7 +231,7 @@ return `
 </div>`;
 }
 
-// AÇÕES
+// AÇÕES (INALTERADO)
 function pagar(i){
 if(confirm("Confirmar pagamento?")){
 despesas[i].status="pago";
@@ -233,7 +256,7 @@ toggleDespesas();
 }
 }
 
-// ADD
+// ADD (INALTERADO)
 function add(){
 let nome = nomeEl.value;
 let valor = Number(valorEl.value);
