@@ -1,211 +1,261 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Financeiro Pro</title>
-    <style>
-        :root { --green: #00c853; --red: #ff5252; --yellow: #ffd740; --bg: #111; --card: #1e1e1e; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #fff; margin: 0; padding: 10px; }
-        
-        /* Layout Superior (3 Cards) */
-        .top-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
-        .mini-card { background: var(--card); padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; border-bottom: 3px solid transparent; }
-        .mini-card h4 { margin: 0; font-size: 0.7em; color: #aaa; text-transform: uppercase; }
-        .mini-card p { margin: 5px 0 0; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; }
-        
-        /* Filtro de Mês */
-        .mes-filtro { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 10px; border-radius: 8px; margin-bottom: 15px; }
-        
-        /* Cards de Status */
-        .status-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
-        .card-status { padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.8em; background: #252525; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financeiro</title>
 
-        /* Estilização Geral */
-        .hidden { display: none; }
-        .modal { background: var(--card); padding: 15px; border-radius: 15px; margin-top: 10px; border: 1px solid #333; }
-        input, select, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: none; background: #333; color: #fff; box-sizing: border-box; }
-        button { background: var(--green); font-weight: bold; cursor: pointer; }
-        .btn-close { background: #555; margin-top: 15px; }
-        
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333; font-size: 0.9em; }
-        .btn-acao { width: auto; padding: 4px 8px; font-size: 0.7em; margin-left: 5px; }
-    </style>
+<style>
+body { font-family: Arial; background:#111; color:#fff; margin:0; }
+header { text-align:center; padding:15px; background:#222; }
+
+.container { padding:12px; }
+
+.grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.card {
+  background:#1e1e1e;
+  padding:15px;
+  border-radius:12px;
+  cursor:pointer;
+  margin-bottom:15px;
+}
+
+.full { grid-column: span 2; }
+
+input, select, button {
+  width:100%;
+  padding:10px;
+  margin-top:5px;
+  border-radius:8px;
+  border:none;
+}
+
+button { background:#00c853; color:#fff; font-weight:bold; }
+  .btn-excluir {
+  background:#d50000;
+}
+
+.green{color:#00e676;}
+.red{color:#ff5252;}
+.yellow{color:#ffd740;}
+
+.hidden{display:none;}
+</style>
 </head>
+
 <body>
 
-<div class="mes-filtro">
-    <button onclick="mudarMes(-1)" style="width: 40px;"><</button>
-    <strong id="mesAtualExibido">Março 2026</strong>
-    <button onclick="mudarMes(1)" style="width: 40px;">></button>
+<header>💰 Meu Financeiro</header>
+
+<div class="container">
+
+<div class="card full">
+<h3>Saldo</h3>
+<p id="saldo">R$ 0</p>
 </div>
 
-<div class="top-row">
-    <div class="mini-card" style="border-color: skyblue;" onclick="abrirDetalhes('receitas')">
-        <h4>Receitas</h4>
-        <p id="resReceita">R$ 0</p>
-    </div>
-    <div class="mini-card" style="border-color: var(--red);" onclick="abrirDetalhes('categorias')">
-        <h4>Gastos</h4>
-        <p id="resGasto">R$ 0</p>
-    </div>
-    <div class="mini-card" id="cardSaldo" onclick="abrirDetalhes('resumo')">
-        <h4>Saldo</h4>
-        <p id="resSaldo">R$ 0</p>
-    </div>
+<div class="grid">
+
+<div class="card green" onclick="mostrarLista('pago')">
+<h3>Pago</h3>
+<p id="totalPago">0</p>
 </div>
 
-<div class="status-row">
-    <div class="card-status" style="color: var(--green)" onclick="abrirDetalhes('pago')">Pago<br><span id="sPago">0</span></div>
-    <div class="card-status" style="color: var(--yellow)" onclick="abrirDetalhes('agendado')">Agendado<br><span id="sAgendado">0</span></div>
-    <div class="card-status" style="color: var(--red)" onclick="abrirDetalhes('pendente')">Pendente<br><span id="sPendente">0</span></div>
+<div class="card yellow" onclick="mostrarLista('agendado')">
+<h3>Agendado</h3>
+<p id="totalAgendado">0</p>
 </div>
 
-<button onclick="toggleElement('formAdd')">➕ Lançar Nova Conta</button>
-
-<div id="formAdd" class="modal hidden">
-    <h3>Nova Despesa</h3>
-    <input id="nome" placeholder="Nome da despesa">
-    <input id="valor" type="number" placeholder="Valor total">
-    <input id="parcelas" type="number" placeholder="Parcelas (ex: 10)">
-    <input id="dataVenc" type="date"> <select id="categoria">
-        <option value="Contas Fixas">Contas Fixas</option>
-        <option value="Cartão Visa">Cartão Visa</option>
-        <option value="Cartão Elo">Cartão Elo</option>
-        <option value="Boleto">Boleto</option>
-    </select>
-
-    <select id="status">
-        <option value="pendente">Pendente</option>
-        <option value="agendado">Agendado</option>
-        <option value="pago">Pago</option>
-    </select>
-
-    <select id="responsavel">
-        <option value="meu">Minha conta</option>
-        <option value="outro">De outra pessoa</option>
-    </select>
-    <input id="pessoa" placeholder="Nome da pessoa" class="hidden">
-
-    <button onclick="salvarDespesa()">SALVAR TUDO</button>
+<div class="card red" onclick="mostrarLista('pendente')">
+<h3>Pendente</h3>
+<p id="totalPendente">0</p>
 </div>
 
-<div id="modalDetalhes" class="modal hidden">
-    <h3 id="tituloDetalhe">Detalhes</h3>
-    <div id="corpoDetalhe"></div>
-    <button class="btn-close" onclick="toggleElement('modalDetalhes')">FECHAR</button>
+<div class="card" onclick="toggleReceitas()">
+<h3>Receitas</h3>
+<p id="receitaTotal">0</p>
+</div>
+
+</div>
+
+<div id="lista" class="card hidden"></div>
+
+<div id="painelReceitas" class="card hidden"></div>
+
+<!-- NOVA DESPESA -->
+<div class="card" onclick="toggleForm()">
+<h3>➕ Nova Despesa</h3>
+</div>
+
+<div id="formDespesa" class="card hidden">
+<input id="nome" placeholder="Nome">
+<input id="valor" type="number" placeholder="Valor total">
+
+<select id="status">
+<option value="pendente">Pendente</option>
+<option value="agendado">Agendado</option>
+<option value="pago">Pago</option>
+</select>
+
+<select id="responsavel">
+<option value="meu">Meu</option>
+<option value="outro">Outro</option>
+</select>
+
+<input id="pessoa" placeholder="Nome da pessoa">
+<input id="parcelas" type="number" placeholder="Parcelas">
+
+<button onclick="add()">Salvar</button>
+</div>
+
 </div>
 
 <script>
-    let dataReferencia = new Date(); // Mês atual
-    let despesas = JSON.parse(localStorage.getItem("desp_v3")) || [];
-    let receitas = JSON.parse(localStorage.getItem("receit_v3")) || [];
 
-    function mudarMes(direcao) {
-        dataReferencia.setMonth(dataReferencia.getMonth() + direcao);
-        atualizarPagina();
-    }
+let despesas = JSON.parse(localStorage.getItem("despesas")) || [];
+let receitas = JSON.parse(localStorage.getItem("receitas")) || [];
 
-    function toggleElement(id) {
-        document.getElementById(id).classList.toggle("hidden");
-    }
+function salvar(){
+localStorage.setItem("despesas", JSON.stringify(despesas));
+localStorage.setItem("receitas", JSON.stringify(receitas));
+atualizar();
+}
 
-    function salvarDespesa() {
-        const nome = document.getElementById("nome").value;
-        const valorTotal = Number(document.getElementById("valor").value);
-        const parcelas = Number(document.getElementById("parcelas").value) || 1;
-        const dataBase = new Date(document.getElementById("dataVenc").value + "T12:00:00");
-        
-        for(let i=0; i < parcelas; i++) {
-            let dataParc = new Date(dataBase);
-            dataParc.setMonth(dataBase.getMonth() + i);
-            
-            despesas.push({
-                id: Date.now() + i,
-                nome: `${nome} (${i+1}/${parcelas})`,
-                valor: valorTotal / parcelas,
-                data: dataParc.toISOString().split('T'),
-                status: document.getElementById("status").value,
-                categoria: document.getElementById("categoria").value,
-                responsavel: document.getElementById("responsavel").value,
-                pessoa: document.getElementById("pessoa").value || 'Eu'
-            });
-        }
-        localStorage.setItem("desp_v3", JSON.stringify(despesas));
-        atualizarPagina();
-        toggleElement('formAdd');
-    }
+function toggleForm(){
+document.getElementById("formDespesa").classList.toggle("hidden");
+}
 
-    function abrirDetalhes(tipo) {
-        const modal = document.getElementById("modalDetalhes");
-        const corpo = document.getElementById("corpoDetalhe");
-        const titulo = document.getElementById("tituloDetalhe");
-        modal.classList.remove("hidden");
-        corpo.innerHTML = "";
+function add(){
+let nome = document.getElementById("nome").value;
+let valor = Number(document.getElementById("valor").value);
+let status = document.getElementById("status").value;
+let responsavel = document.getElementById("responsavel").value;
+let pessoa = document.getElementById("pessoa").value;
+let parcelas = Number(document.getElementById("parcelas").value) || 1;
 
-        const mesAnoRef = dataReferencia.toISOString().slice(0, 7);
-        const itensMes = despesas.filter(d => d.data.startsWith(mesAnoRef));
+for(let i=1;i<=parcelas;i++){
+despesas.push({
+nome: nome + " ("+i+"/"+parcelas+")",
+valor: valor/parcelas,
+status,
+responsavel,
+pessoa
+});
+}
 
-        if(tipo === 'categorias') {
-            titulo.innerText = "Gastos por Categoria";
-            let cats = {};
-            itensMes.forEach(d => { if(d.responsavel === 'meu') cats[d.categoria] = (cats[d.categoria] || 0) + d.valor });
-            for(let c in cats) corpo.innerHTML += `<div class="item-row"><span>${c}</span> <b>R$ ${cats[c].toFixed(2)}</b></div>`;
-        } 
-        
-        if(['pago', 'pendente', 'agendado'].includes(tipo)) {
-            titulo.innerText = "Itens " + tipo.toUpperCase();
-            itensMes.filter(d => d.status === tipo).forEach(d => {
-                corpo.innerHTML += `
-                <div class="item-row">
-                    <span>${d.nome}<br><small>${d.data}</small></span>
-                    <div>
-                        <b>R$ ${d.valor.toFixed(2)}</b><br>
-                        <button class="btn-acao" onclick="mudarStatus(${d.id}, 'pago')">P</button>
-                        <button class="btn-acao" onclick="mudarStatus(${d.id}, 'agendado')">A</button>
-                        <button class="btn-acao" onclick="mudarStatus(${d.id}, 'pendente')">!</button>
-                    </div>
-                </div>`;
-            });
-        }
-    }
+salvar();
+alert("Despesa salva!");
+}
 
-    function mudarStatus(id, novoStatus) {
-        let index = despesas.findIndex(d => d.id === id);
-        despesas[index].status = novoStatus;
-        localStorage.setItem("desp_v3", JSON.stringify(despesas));
-        atualizarPagina();
-        toggleElement('modalDetalhes');
-    }
+function mostrarLista(tipo){
+let lista=document.getElementById("lista");
+lista.classList.remove("hidden");
 
-    function atualizarPagina() {
-        const mesAnoRef = dataReferencia.toISOString().slice(0, 7);
-        const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-        document.getElementById("mesAtualExibido").innerText = nomesMeses[dataReferencia.getMonth()] + " " + dataReferencia.getFullYear();
+let html="<h3>"+tipo.toUpperCase()+"</h3>";
 
-        const itensMes = despesas.filter(d => d.data.startsWith(mesAnoRef));
-        let p=0, a=0, pend=0;
-        itensMes.forEach(d => {
-            if(d.responsavel === 'meu') {
-                if(d.status === 'pago') p += d.valor;
-                if(d.status === 'agendado') a += d.valor;
-                if(d.status === 'pendente') pend += d.valor;
-            }
-        });
+despesas.forEach((d,i)=>{
+if(d.status===tipo){
+html+=`
+<p>${d.nome} - R$ ${d.valor.toFixed(2)}
+<button onclick="remover(${i})">X</button>
+</p>`;
+}
+});
 
-        document.getElementById("sPago").innerText = "R$ "+p.toFixed(2);
-        document.getElementById("sAgendado").innerText = "R$ "+a.toFixed(2);
-        document.getElementById("sPendente").innerText = "R$ "+pend.toFixed(2);
-        document.getElementById("resGasto").innerText = "R$ "+(p+a+pend).toFixed(2);
-        
-        // Simulação de Saldo (Ajuste conforme suas receitas)
-        let totalRec = receitas.reduce((acc, r) => acc + r.valor, 0);
-        document.getElementById("resReceita").innerText = "R$ "+totalRec.toFixed(2);
-        let saldoFinal = totalRec - (p+a+pend);
-        document.getElementById("resSaldo").innerText = "R$ "+saldoFinal.toFixed(2);
-    }
+lista.innerHTML=html;
+}
 
-    atualizarPagina();
+function remover(i){
+despesas.splice(i,1);
+salvar();
+}
+
+function toggleReceitas(){
+let painel = document.getElementById("painelReceitas");
+
+painel.classList.toggle("hidden");
+
+let html = "<h3>Receitas</h3>";
+
+receitas.forEach((r,i)=>{
+html += `
+<p>${r.desc} — R$ ${r.valor.toFixed(2)}
+<span onclick="removerReceita(${i})" style="cursor:pointer;">🗑️</span>
+</p>`;
+});
+
+html += `
+<button onclick="mostrarFormReceita()">➕ Adicionar Receita</button>
+
+<div id="formReceita" class="hidden">
+<input id="descReceita" placeholder="Descrição">
+<input id="valorReceita" type="number" placeholder="Valor">
+<button onclick="addReceita()">Salvar</button>
+</div>
+`;
+
+painel.innerHTML = html;
+}
+
+function mostrarFormReceita(){
+document.getElementById("formReceita").classList.remove("hidden");
+}
+
+function addReceita(){
+let desc = document.getElementById("descReceita").value;
+let valor = Number(document.getElementById("valorReceita").value);
+
+receitas.push({desc, valor});
+
+salvar();
+toggleReceitas();
+toggleReceitas();
+}
+
+function removerReceita(i){
+if(confirm("Deseja realmente excluir esta receita?")){
+  receitas.splice(i,1);
+  salvar();
+  toggleReceitas();
+  toggleReceitas();
+}
+}
+
+function atualizar(){
+
+let receitaTotal = receitas.reduce((t,r)=> t+r.valor, 0);
+
+let pago=0, agendado=0, pendente=0;
+
+despesas.forEach(d=>{
+if(d.responsavel!=="meu") return;
+
+if(d.status==="pago") pago+=d.valor;
+if(d.status==="agendado") agendado+=d.valor;
+if(d.status==="pendente") pendente+=d.valor;
+});
+
+document.getElementById("totalPago").innerText="R$ "+pago.toFixed(2);
+document.getElementById("totalAgendado").innerText="R$ "+agendado.toFixed(2);
+document.getElementById("totalPendente").innerText="R$ "+pendente.toFixed(2);
+document.getElementById("receitaTotal").innerText="R$ "+receitaTotal.toFixed(2);
+
+let saldo=receitaTotal-(pago+agendado+pendente);
+
+let saldoEl=document.getElementById("saldo");
+saldoEl.innerText="R$ "+saldo.toFixed(2);
+saldoEl.className=saldo>=0?"green":"red";
+
+}
+
+atualizar();
+
 </script>
+
 </body>
 </html>
