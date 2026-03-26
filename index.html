@@ -18,11 +18,9 @@ header { text-align:center; padding:15px; background:#222; }
 }
 
 .grid2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  text-align: center; /* Centraliza o texto horizontalmente */
-  font-weight: bold;  /* Deixa a letra mais gordinha/visível */
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
 }
 
 .card {
@@ -86,13 +84,11 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 </div>
 </div>
 
-<!-- BOTÕES GRANDES -->
 <div class="grid2">
 <div class="card greenCard" onclick="toggleFormReceita()"> Receita</div>
 <div class="card redCard" onclick="toggleFormDespesa()"> Despesa</div>
 </div>
 
-<!-- FORM RECEITA -->
 <div id="formReceita" class="card hidden">
 <label>Descrição</label>
 <input id="descReceita">
@@ -103,7 +99,6 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 <button onclick="addReceita()">Salvar</button>
 </div>
 
-<!-- FORM DESPESA -->
 <div id="formDespesa" class="card hidden">
 <label>Nome</label>
 <input id="nome">
@@ -124,7 +119,6 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 <button onclick="add()">Salvar</button>
 </div>
 
-<!-- LISTAS -->
 <div id="listaReceitas" class="card hidden"></div>
 <div id="listaDespesas" class="card hidden"></div>
 
@@ -146,25 +140,59 @@ atualizar();
 
 function msg(t){ alert(t); }
 
-// TOGGLES
+// 🔥 NOVO: CONTROLE GLOBAL
+function fecharTudo(){
+document.getElementById("formReceita").classList.add("hidden");
+document.getElementById("formDespesa").classList.add("hidden");
+document.getElementById("listaReceitas").classList.add("hidden");
+document.getElementById("listaDespesas").classList.add("hidden");
+}
+
+// TOGGLES CORRIGIDOS
 function toggleFormReceita(){
-document.getElementById("formReceita").classList.toggle("hidden");
+let el = document.getElementById("formReceita");
+
+if(!el.classList.contains("hidden")){
+el.classList.add("hidden");
+} else {
+fecharTudo();
+el.classList.remove("hidden");
+}
 }
 
 function toggleFormDespesa(){
-document.getElementById("formDespesa").classList.toggle("hidden");
+let el = document.getElementById("formDespesa");
+
+if(!el.classList.contains("hidden")){
+el.classList.add("hidden");
+} else {
+fecharTudo();
+el.classList.remove("hidden");
+}
 }
 
 function toggleReceitas(){
-let div = document.getElementById("listaReceitas");
-div.classList.toggle("hidden");
+let el = document.getElementById("listaReceitas");
+
+if(!el.classList.contains("hidden")){
+el.classList.add("hidden");
+} else {
+fecharTudo();
+el.classList.remove("hidden");
 renderReceitas();
+}
 }
 
 function toggleDespesas(){
-let div = document.getElementById("listaDespesas");
-div.classList.toggle("hidden");
+let el = document.getElementById("listaDespesas");
+
+if(!el.classList.contains("hidden")){
+el.classList.add("hidden");
+} else {
+fecharTudo();
+el.classList.remove("hidden");
 renderDespesas();
+}
 }
 
 // RECEITAS
