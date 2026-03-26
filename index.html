@@ -260,6 +260,13 @@ function add(){
 let nome = document.getElementById("nome").value;
 let valor = Number(document.getElementById("valor").value);
 let data = document.getElementById("data").value;
+  <label>Categoria</label>
+<select id="categoria">
+  <option value="Fixa">Despesa Fixa</option>
+  <option value="Cartão">Cartão</option>
+  <option value="Boleto">Boleto</option>
+  <option value="Outros">Outros</option>
+</select>
 let status = document.getElementById("status").value;
 
 if(!nome) return msg("Preencha nome");
