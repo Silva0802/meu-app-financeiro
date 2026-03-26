@@ -29,17 +29,20 @@ header { text-align:center; padding:15px; background:#222; }
   border-radius:10px;
   margin-bottom:10px;
   cursor:pointer;
-  text-align:center; /* CENTRALIZADO */
 }
 
-.subcard {
-  background:#2a2a2a;
-  padding:10px;
-  border-radius:8px;
-  margin:5px 0;
-  cursor:pointer;
-  text-align:center;
+.greenCard { background:#1b5e20; }
+.redCard { background:#b71c1c; }
+
+input, select, button {
+  width:100%;
+  padding:8px;
+  margin-top:5px;
+  border-radius:6px;
+  border:none;
 }
+
+button { background:#00c853; color:#fff; font-weight:bold; }
 
 .item {
   display:flex;
@@ -64,50 +67,64 @@ header { text-align:center; padding:15px; background:#222; }
 
 <div class="container">
 
-<!-- TOPO -->
 <div class="grid3">
 <div class="card" onclick="toggleReceitas()">
-Receitas<br><span id="receitaTotal"></span>
+<h3>Receitas</h3>
+<p id="receitaTotal">0</p>
 </div>
 
 <div class="card" onclick="toggleDespesas()">
-Despesas<br><span id="gastosTotal"></span>
+<h3>Despesas</h3>
+<p id="gastosTotal">0</p>
 </div>
 
 <div class="card">
-Saldo<br><span id="saldo"></span>
+<h3>Saldo</h3>
+<p id="saldo">0</p>
 </div>
 </div>
 
-<!-- BOTÕES -->
+<!-- BOTÕES GRANDES -->
 <div class="grid2">
-<div class="card" onclick="abrir('formReceita')">Receita</div>
-<div class="card" onclick="abrir('formDespesa')">Despesa</div>
+<div class="card greenCard" onclick="toggleFormReceita()"> Receita</div>
+<div class="card redCard" onclick="toggleFormDespesa()"> Despesa</div>
 </div>
 
 <!-- FORM RECEITA -->
 <div id="formReceita" class="card hidden">
-<input id="descReceita" placeholder="Descrição">
-<input id="valorReceita" type="number" placeholder="Valor">
+<label>Descrição</label>
+<input id="descReceita">
+
+<label>Valor</label>
+<input id="valorReceita" type="number">
+
 <button onclick="addReceita()">Salvar</button>
 </div>
 
 <!-- FORM DESPESA -->
 <div id="formDespesa" class="card hidden">
-<input id="nome" placeholder="Nome">
-<input id="valor" type="number" placeholder="Valor">
+<label>Nome</label>
+<input id="nome">
+
+<label>Valor</label>
+<input id="valor" type="number">
+
+<label>Data</label>
 <input id="data" type="date">
+
+<label>Status</label>
 <select id="status">
 <option value="pendente">Pendente</option>
 <option value="agendado">Agendado</option>
 <option value="pago">Pago</option>
 </select>
-<input id="categoria" placeholder="Ex: Visa, Elo...">
+
 <button onclick="add()">Salvar</button>
 </div>
 
-<!-- AREA -->
-<div id="area"></div>
+<!-- LISTAS -->
+<div id="listaReceitas" class="card hidden"></div>
+<div id="listaDespesas" class="card hidden"></div>
 
 </div>
 
@@ -125,21 +142,54 @@ localStorage.setItem("receitas", JSON.stringify(receitas));
 atualizar();
 }
 
-// 🔥 CONTROLE (CORREÇÃO DO BUG DE TELA)
-function fecharTudo(){
-document.getElementById("formReceita").classList.add("hidden");
-document.getElementById("formDespesa").classList.add("hidden");
-document.getElementById("area").innerHTML="";
+function msg(t){ alert(t); }
+
+// TOGGLES
+function toggleFormReceita(){
+document.getElementById("formReceita").classList.toggle("hidden");
 }
 
-function abrir(id){
-fecharTudo();
-document.getElementById(id).classList.remove("hidden");
+function toggleFormDespesa(){
+document.getElementById("formDespesa").classList.toggle("hidden");
 }
 
-// RECEITAS (SEM ALTERAR LÓGICA)
 function toggleReceitas(){
-fecharTudo();
+let div = document.getElementById("listaReceitas");
+div.classList.toggle("hidden");
+renderReceitas();
+}
+
+function toggleDespesas(){
+let div = document.getElementById("listaDespesas");
+div.classList.toggle("hidden");
+renderDespesas();
+}
+
+// RECEITAS
+function addReceita(){
+let desc = document.getElementById("descReceita").value;
+let valor = Number(document.getElementById("valorReceita").value);
+
+if(!desc) return msg("Preencha descrição");
+if(!valor) return msg("Preencha valor");
+
+if(editReceitaIndex !== null){
+receitas[editReceitaIndex] = {desc, valor};
+editReceitaIndex = null;
+} else {
+receitas.push({desc, valor});
+}
+
+document.getElementById("descReceita").value="";
+document.getElementById("valorReceita").value="";
+
+salvar();
+renderReceitas();
+msg("Salvo!");
+}
+
+function renderReceitas(){
+let div = document.getElementById("listaReceitas");
 
 let html="<h3>Receitas</h3>";
 
@@ -154,72 +204,61 @@ html+=`
 </div>`;
 });
 
-document.getElementById("area").innerHTML=html;
+div.innerHTML = html;
 }
 
-// 🔥 DESPESAS → AGORA MOSTRA STATUS (PEDIDO SEU)
-function toggleDespesas(){
-fecharTudo();
+function editarReceita(i){
+let r = receitas[i];
+document.getElementById("descReceita").value = r.desc;
+document.getElementById("valorReceita").value = r.valor;
+editReceitaIndex = i;
+toggleFormReceita();
+}
 
-let html=`
-<div class="grid3">
-<div class="subcard" onclick="filtroStatus('pendente')">Pendente</div>
-<div class="subcard" onclick="filtroStatus('agendado')">Agendado</div>
-<div class="subcard" onclick="filtroStatus('pago')">Pago</div>
-</div>
-`;
+function removerReceita(i){
+if(confirm("Excluir receita?")){
+receitas.splice(i,1);
+salvar();
+renderReceitas();
+msg("Excluído!");
+}
+}
 
-// 🔥 SUBTOTAL POR CATEGORIA (SEM QUEBRAR)
-let categorias = {};
+// DESPESAS
+function add(){
 
-despesas.forEach(d=>{
-if(!d.categoria) return;
-if(!categorias[d.categoria]) categorias[d.categoria]=0;
-categorias[d.categoria]+=d.valor;
-});
+let nome = document.getElementById("nome").value;
+let valor = Number(document.getElementById("valor").value);
+let data = document.getElementById("data").value;
+let status = document.getElementById("status").value;
 
-if(Object.keys(categorias).length){
-html+="<h3>Categorias</h3>";
+if(!nome) return msg("Preencha nome");
+if(!valor) return msg("Preencha valor");
+if(!data) return msg("Preencha data");
 
-for(let cat in categorias){
+if(editIndex !== null){
+despesas[editIndex] = {nome, valor, data, status};
+editIndex = null;
+} else {
+despesas.push({nome, valor, data, status});
+}
+
+document.getElementById("nome").value="";
+document.getElementById("valor").value="";
+document.getElementById("data").value="";
+
+salvar();
+renderDespesas();
+msg("Salvo!");
+}
+
+function renderDespesas(){
+let div = document.getElementById("listaDespesas");
+
+let html="<h3>Despesas</h3>";
+
+despesas.forEach((d,i)=>{
 html+=`
-<div class="subcard" onclick="filtroCategoria('${cat}')">
-${cat} - R$ ${categorias[cat].toFixed(2)}
-</div>`;
-}
-}
-
-document.getElementById("area").innerHTML=html;
-}
-
-// FILTROS (SEM MUDAR SUA LÓGICA)
-function filtroStatus(tipo){
-let html="<h3>"+tipo.toUpperCase()+"</h3>";
-
-despesas.forEach((d,i)=>{
-if(d.status===tipo){
-html+=itemHTML(d,i);
-}
-});
-
-document.getElementById("area").innerHTML=html;
-}
-
-function filtroCategoria(cat){
-let html="<h3>"+cat+"</h3>";
-
-despesas.forEach((d,i)=>{
-if(d.categoria===cat){
-html+=itemHTML(d,i);
-}
-});
-
-document.getElementById("area").innerHTML=html;
-}
-
-// ITEM PADRÃO (MESMA LÓGICA)
-function itemHTML(d,i){
-return `
 <div class="item">
 <span>${d.nome} - R$ ${d.valor.toFixed(2)}</span>
 <div class="icons">
@@ -229,72 +268,62 @@ return `
 <span onclick="remover(${i})">🗑️</span>
 </div>
 </div>`;
+});
+
+div.innerHTML = html;
 }
 
-// AÇÕES (INALTERADO)
 function pagar(i){
-if(confirm("Confirmar pagamento?")){
+if(confirm("Marcar como PAGO?")){
 despesas[i].status="pago";
 salvar();
-toggleDespesas();
+renderDespesas();
 }
 }
 
 function agendar(i){
-if(confirm("Confirmar agendamento?")){
+if(confirm("Marcar como AGENDADO?")){
 despesas[i].status="agendado";
 salvar();
-toggleDespesas();
+renderDespesas();
 }
+}
+
+function editar(i){
+let d = despesas[i];
+
+document.getElementById("nome").value = d.nome;
+document.getElementById("valor").value = d.valor;
+document.getElementById("data").value = d.data;
+document.getElementById("status").value = d.status;
+
+editIndex = i;
+toggleFormDespesa();
 }
 
 function remover(i){
-if(confirm("Excluir?")){
+if(confirm("Excluir despesa?")){
 despesas.splice(i,1);
 salvar();
-toggleDespesas();
+renderDespesas();
+msg("Excluído!");
 }
-}
-
-// ADD (INALTERADO)
-function add(){
-let nome = nomeEl.value;
-let valor = Number(valorEl.value);
-let data = dataEl.value;
-let status = statusEl.value;
-let categoria = categoriaEl.value;
-
-if(!nome || !valor || !data) return alert("Preencha tudo");
-
-despesas.push({nome,valor,data,status,categoria});
-
-salvar();
-fecharTudo();
-}
-
-function addReceita(){
-let desc = descReceita.value;
-let valor = Number(valorReceita.value);
-
-if(!desc || !valor) return alert("Preencha tudo");
-
-receitas.push({desc,valor});
-
-salvar();
-fecharTudo();
 }
 
 // TOTAL
 function atualizar(){
-let r = receitas.reduce((t,x)=>t+x.valor,0);
-let g = despesas.reduce((t,x)=>t+x.valor,0);
 
-receitaTotal.innerText="R$ "+r.toFixed(2);
-gastosTotal.innerText="R$ "+g.toFixed(2);
+let receitaTotal = receitas.reduce((t,r)=> t+r.valor, 0);
+let gastosTotal = despesas.reduce((t,d)=> t+d.valor, 0);
 
-let s = r-g;
-saldo.innerText="R$ "+s.toFixed(2);
-saldo.className=s>=0?"green":"red";
+document.getElementById("receitaTotal").innerText="R$ "+receitaTotal.toFixed(2);
+document.getElementById("gastosTotal").innerText="R$ "+gastosTotal.toFixed(2);
+
+let saldo=receitaTotal-gastosTotal;
+
+let saldoEl=document.getElementById("saldo");
+saldoEl.innerText="R$ "+saldo.toFixed(2);
+saldoEl.className=saldo>=0?"green":"red";
 }
 
 atualizar();
