@@ -11,27 +11,24 @@ header { text-align:center; padding:15px; background:#222; }
 
 .container { padding:12px; }
 
-.grid {
+.grid3 {
   display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
 }
 
 .card {
   background:#1e1e1e;
-  padding:15px;
-  border-radius:12px;
-  cursor:pointer;
-  margin-bottom:15px;
+  padding:12px;
+  border-radius:10px;
+  margin-bottom:10px;
 }
-
-.full { grid-column: span 2; }
 
 input, select, button {
   width:100%;
-  padding:10px;
+  padding:8px;
   margin-top:5px;
-  border-radius:8px;
+  border-radius:6px;
   border:none;
 }
 
@@ -40,12 +37,11 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 .item {
   display:flex;
   justify-content:space-between;
-  align-items:center;
-  margin-bottom:8px;
+  margin-bottom:6px;
 }
 
 .icons span {
-  margin-left:10px;
+  margin-left:8px;
   cursor:pointer;
 }
 
@@ -62,62 +58,63 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 
 <div class="container">
 
-<div class="card full">
-<h3>Saldo</h3>
-<p id="saldo">R$ 0</p>
+<div class="grid3">
+<div class="card green"><h3>Receitas</h3><p id="receitaTotal">0</p></div>
+<div class="card red"><h3>Gastos</h3><p id="gastosTotal">0</p></div>
+<div class="card"><h3>Saldo</h3><p id="saldo">0</p></div>
 </div>
 
-<div class="grid">
-
-<div class="card green" onclick="mostrarLista('pago')">
-<h3>Pago</h3>
-<p id="totalPago">0</p>
-</div>
-
-<div class="card yellow" onclick="mostrarLista('agendado')">
-<h3>Agendado</h3>
-<p id="totalAgendado">0</p>
-</div>
-
-<div class="card red" onclick="mostrarLista('pendente')">
-<h3>Pendente</h3>
-<p id="totalPendente">0</p>
-</div>
-
-<div class="card" onclick="toggleReceitas()">
-<h3>Receitas</h3>
-<p id="receitaTotal">0</p>
-</div>
-
+<div class="grid3">
+<div class="card" onclick="mostrarLista('pendente')">Pendente</div>
+<div class="card" onclick="mostrarLista('agendado')">Agendado</div>
+<div class="card" onclick="mostrarLista('pago')">Pago</div>
 </div>
 
 <div id="lista" class="card hidden"></div>
-<div id="painelReceitas" class="card hidden"></div>
 
-<!-- NOVA DESPESA -->
-<div class="card" onclick="toggleForm()">
+<div class="card">
 <h3>➕ Nova Despesa</h3>
-</div>
 
-<div id="formDespesa" class="card hidden">
-<input id="nome" placeholder="Nome">
-<input id="valor" type="number" placeholder="Valor total">
+<label>Nome</label>
+<input id="nome">
 
+<label>Valor</label>
+<input id="valor" type="number">
+
+<label>Data</label>
+<input id="data" type="date">
+
+<label>Categoria</label>
+<select id="categoria">
+<option>Cartão</option>
+<option>Boleto</option>
+<option>Fixa</option>
+<option>Outros</option>
+</select>
+
+<label>Status</label>
 <select id="status">
 <option value="pendente">Pendente</option>
 <option value="agendado">Agendado</option>
 <option value="pago">Pago</option>
 </select>
 
-<select id="responsavel">
-<option value="meu">Meu</option>
-<option value="outro">Outro</option>
-</select>
-
-<input id="pessoa" placeholder="Nome da pessoa">
-<input id="parcelas" type="number" placeholder="Parcelas">
+<label>Parcelas</label>
+<input id="parcelas" type="number">
 
 <button onclick="add()">Salvar</button>
+</div>
+
+<div class="card">
+<h3>➕ Receita</h3>
+
+<label>Descrição</label>
+<input id="descReceita">
+
+<label>Valor</label>
+<input id="valorReceita" type="number">
+
+<button onclick="addReceita()">Salvar Receita</button>
 </div>
 
 </div>
@@ -128,7 +125,10 @@ let despesas = JSON.parse(localStorage.getItem("despesas")) || [];
 let receitas = JSON.parse(localStorage.getItem("receitas")) || [];
 
 let editIndex = null;
-let editReceitaIndex = null;
+
+function msg(text){
+alert(text);
+}
 
 function salvar(){
 localStorage.setItem("despesas", JSON.stringify(despesas));
@@ -136,15 +136,10 @@ localStorage.setItem("receitas", JSON.stringify(receitas));
 atualizar();
 }
 
-function toggleForm(){
-document.getElementById("formDespesa").classList.toggle("hidden");
-editIndex = null;
-}
-
-function limparCampos(){
+function limpar(){
 document.getElementById("nome").value="";
 document.getElementById("valor").value="";
-document.getElementById("pessoa").value="";
+document.getElementById("data").value="";
 document.getElementById("parcelas").value="";
 }
 
@@ -152,28 +147,28 @@ function add(){
 
 let nome = document.getElementById("nome").value;
 let valor = Number(document.getElementById("valor").value);
+let data = document.getElementById("data").value;
+let categoria = document.getElementById("categoria").value;
 let status = document.getElementById("status").value;
-let responsavel = document.getElementById("responsavel").value;
-let pessoa = document.getElementById("pessoa").value;
 let parcelas = Number(document.getElementById("parcelas").value) || 1;
 
-if(editIndex !== null){
-despesas[editIndex] = {nome, valor, status, responsavel, pessoa};
-} else {
+if(!nome) return msg("Preencha o NOME");
+if(!valor) return msg("Preencha o VALOR");
+if(!data) return msg("Preencha a DATA");
+
 for(let i=1;i<=parcelas;i++){
 despesas.push({
-nome: nome + (parcelas>1 ? " ("+i+"/"+parcelas+")" : ""),
+nome,
 valor: valor/parcelas,
-status,
-responsavel,
-pessoa
+data,
+categoria,
+status
 });
-}
 }
 
 salvar();
-limparCampos();
-alert("Salvo com sucesso!");
+limpar();
+msg("Despesa salva!");
 }
 
 function mostrarLista(tipo){
@@ -188,6 +183,11 @@ html+=`
 <div class="item">
 <span>${d.nome} - R$ ${d.valor.toFixed(2)}</span>
 <div class="icons">
+<select onchange="mudarStatus(${i}, this.value)">
+<option>...</option>
+<option value="pago">Pago</option>
+<option value="agendado">Agendar</option>
+</select>
 <span onclick="editar(${i})">✏️</span>
 <span onclick="remover(${i})">🗑️</span>
 </div>
@@ -198,124 +198,58 @@ html+=`
 lista.innerHTML=html;
 }
 
+function mudarStatus(i, novo){
+despesas[i].status = novo;
+salvar();
+mostrarLista(novo);
+}
+
 function editar(i){
 let d = despesas[i];
 
 document.getElementById("nome").value = d.nome;
 document.getElementById("valor").value = d.valor;
+document.getElementById("data").value = d.data;
+document.getElementById("categoria").value = d.categoria;
 document.getElementById("status").value = d.status;
-document.getElementById("responsavel").value = d.responsavel;
-document.getElementById("pessoa").value = d.pessoa;
 
 editIndex = i;
-document.getElementById("formDespesa").classList.remove("hidden");
 }
 
 function remover(i){
-if(confirm("Deseja excluir esta despesa?")){
+if(confirm("Excluir despesa?")){
 despesas.splice(i,1);
 salvar();
+msg("Excluído!");
 }
-}
-
-function toggleReceitas(){
-let painel = document.getElementById("painelReceitas");
-painel.classList.toggle("hidden");
-
-let html = "<h3>Receitas</h3>";
-
-receitas.forEach((r,i)=>{
-html += `
-<div class="item">
-<span>${r.desc} — R$ ${r.valor.toFixed(2)}</span>
-<div class="icons">
-<span onclick="editarReceita(${i})">✏️</span>
-<span onclick="removerReceita(${i})">🗑️</span>
-</div>
-</div>`;
-});
-
-html += `
-<button onclick="mostrarFormReceita()">➕ Adicionar Receita</button>
-
-<div id="formReceita" class="hidden">
-<input id="descReceita" placeholder="Descrição">
-<input id="valorReceita" type="number" placeholder="Valor">
-<button onclick="addReceita()">Salvar</button>
-</div>
-`;
-
-painel.innerHTML = html;
-}
-
-function mostrarFormReceita(){
-document.getElementById("formReceita").classList.remove("hidden");
-editReceitaIndex = null;
 }
 
 function addReceita(){
 let desc = document.getElementById("descReceita").value;
 let valor = Number(document.getElementById("valorReceita").value);
 
-if(editReceitaIndex !== null){
-receitas[editReceitaIndex] = {desc, valor};
-} else {
+if(!desc) return msg("Preencha a descrição");
+if(!valor) return msg("Preencha o valor");
+
 receitas.push({desc, valor});
-}
 
 salvar();
-toggleReceitas();
-toggleReceitas();
-}
-
-function editarReceita(i){
-let r = receitas[i];
-
-toggleReceitas();
-toggleReceitas();
-
-setTimeout(()=>{
-document.getElementById("descReceita").value = r.desc;
-document.getElementById("valorReceita").value = r.valor;
-editReceitaIndex = i;
-document.getElementById("formReceita").classList.remove("hidden");
-},100);
-}
-
-function removerReceita(i){
-if(confirm("Deseja excluir esta receita?")){
-receitas.splice(i,1);
-salvar();
-toggleReceitas();
-toggleReceitas();
-}
+msg("Receita salva!");
 }
 
 function atualizar(){
 
 let receitaTotal = receitas.reduce((t,r)=> t+r.valor, 0);
+let gastosTotal = despesas.reduce((t,d)=> t+d.valor, 0);
 
-let pago=0, agendado=0, pendente=0;
-
-despesas.forEach(d=>{
-if(d.responsavel!=="meu") return;
-
-if(d.status==="pago") pago+=d.valor;
-if(d.status==="agendado") agendado+=d.valor;
-if(d.status==="pendente") pendente+=d.valor;
-});
-
-document.getElementById("totalPago").innerText="R$ "+pago.toFixed(2);
-document.getElementById("totalAgendado").innerText="R$ "+agendado.toFixed(2);
-document.getElementById("totalPendente").innerText="R$ "+pendente.toFixed(2);
 document.getElementById("receitaTotal").innerText="R$ "+receitaTotal.toFixed(2);
+document.getElementById("gastosTotal").innerText="R$ "+gastosTotal.toFixed(2);
 
-let saldo=receitaTotal-(pago+agendado+pendente);
+let saldo=receitaTotal-gastosTotal;
 
 let saldoEl=document.getElementById("saldo");
 saldoEl.innerText="R$ "+saldo.toFixed(2);
 saldoEl.className=saldo>=0?"green":"red";
-
 }
 
 atualizar();
