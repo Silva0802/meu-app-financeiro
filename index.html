@@ -5,217 +5,207 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Financeiro Pro</title>
     <style>
-        body { font-family: 'Segoe UI', Arial; background:#121212; color:#e0e0e0; margin:0; padding-bottom: 50px; }
-        header { text-align:center; padding:20px; background:#1f1f1f; border-bottom: 2px solid #00c853; font-weight: bold; font-size: 1.2em; }
-        .container { padding:15px; max-width: 500px; margin: auto; }
+        :root { --green: #00c853; --red: #ff5252; --yellow: #ffd740; --bg: #111; --card: #1e1e1e; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #fff; margin: 0; padding: 10px; }
         
-        /* Cards de Resumo */
-        .resumo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .card { background:#1e1e1e; padding:15px; border-radius:12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .full { grid-column: span 2; }
-        .card h3 { margin: 0; font-size: 0.9em; color: #aaa; }
-        .card p { margin: 5px 0 0; font-size: 1.3em; font-weight: bold; }
+        /* Layout Superior (3 Cards) */
+        .top-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .mini-card { background: var(--card); padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; border-bottom: 3px solid transparent; }
+        .mini-card h4 { margin: 0; font-size: 0.7em; color: #aaa; text-transform: uppercase; }
+        .mini-card p { margin: 5px 0 0; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; }
         
-        /* Cores */
-        .saldo-positivo { color: #00e676; }
-        .saldo-negativo { color: #ff5252; }
-        .txt-pago { color: #00e676; }
-        .txt-agendado { color: #ffd740; }
-        .txt-pendente { color: #ff5252; }
+        /* Filtro de Mês */
+        .mes-filtro { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 10px; border-radius: 8px; margin-bottom: 15px; }
+        
+        /* Cards de Status */
+        .status-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .card-status { padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.8em; background: #252525; }
 
-        /* Listagem */
-        .secao-titulo { margin-top: 20px; border-left: 4px solid #00c853; padding-left: 10px; font-size: 1.1em; }
-        .item-lista { background: #252525; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-right: 4px solid transparent; }
-        .item-pago { border-right-color: #00e676; }
-        .item-agendado { border-right-color: #ffd740; }
-        .item-pendente { border-right-color: #ff5252; }
-        .item-info span { display: block; font-size: 0.8em; color: #888; }
-
-        /* Formulário */
-        input, select, button { width:100%; padding:12px; margin-top:10px; border-radius:8px; border:none; box-sizing: border-box; }
-        input, select { background: #333; color: #fff; }
-        button { background:#00c853; color:#fff; font-weight:bold; cursor:pointer; }
-        .btn-toggle { background: #333; margin-bottom: 20px; }
-        .btn-del { width: auto; padding: 5px 10px; background: #cf6679; margin: 0; }
-
+        /* Estilização Geral */
         .hidden { display: none; }
+        .modal { background: var(--card); padding: 15px; border-radius: 15px; margin-top: 10px; border: 1px solid #333; }
+        input, select, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: none; background: #333; color: #fff; box-sizing: border-box; }
+        button { background: var(--green); font-weight: bold; cursor: pointer; }
+        .btn-close { background: #555; margin-top: 15px; }
+        
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333; font-size: 0.9em; }
+        .btn-acao { width: auto; padding: 4px 8px; font-size: 0.7em; margin-left: 5px; }
     </style>
 </head>
 <body>
 
-<header>💰 MEU FINANCEIRO</header>
+<div class="mes-filtro">
+    <button onclick="mudarMes(-1)" style="width: 40px;"><</button>
+    <strong id="mesAtualExibido">Março 2026</strong>
+    <button onclick="mudarMes(1)" style="width: 40px;">></button>
+</div>
 
-<div class="container">
-    <div class="resumo-grid">
-        <div class="card full">
-            <h3>Saldo Disponível (Meu)</h3>
-            <p id="saldo" class="saldo-positivo">R$ 0,00</p>
-        </div>
-        <div class="card">
-            <h3>Pago</h3>
-            <p id="totalPago" class="txt-pago">R$ 0</p>
-        </div>
-        <div class="card">
-            <h3>Agendado</h3>
-            <p id="totalAgendado" class="txt-agendado">R$ 0</p>
-        </div>
-        <div class="card">
-            <h3>Pendente</h3>
-            <p id="totalPendente" class="txt-pendente">R$ 0</p>
-        </div>
-        <div class="card full">
-            <h3>Receitas Totais</h3>
-            <p id="receitaTotal" style="color: skyblue">R$ 0</p>
-        </div>
+<div class="top-row">
+    <div class="mini-card" style="border-color: skyblue;" onclick="abrirDetalhes('receitas')">
+        <h4>Receitas</h4>
+        <p id="resReceita">R$ 0</p>
     </div>
-
-    <button class="btn-toggle" onclick="toggleForm('formDespesa')">➕ Nova Despesa / Cartão</button>
-    
-    <div id="formDespesa" class="card hidden">
-        <input id="nome" placeholder="Ex: Cama, Perfume, Aluguel">
-        <input id="valor" type="number" placeholder="Valor Total">
-        <input id="parcelas" type="number" placeholder="Parcelas (Ex: 10)">
-        
-        <select id="categoria">
-            <option value="Contas Fixas">Contas Fixas</option>
-            <option value="Cartão Visa">Cartão Visa</option>
-            <option value="Cartão Elo">Cartão Elo</option>
-            <option value="Boleto">Boleto</option>
-            <option value="Outros">Outros</option>
-        </select>
-
-        <select id="status">
-            <option value="pendente">Pendente</option>
-            <option value="agendado">Agendado</option>
-            <option value="pago">Pago</option>
-        </select>
-
-        <select id="responsavel">
-            <option value="meu">Minha Despesa</option>
-            <option value="outro">De outra pessoa</option>
-        </select>
-        <input id="pessoa" placeholder="Nome da pessoa (se for 'Outro')">
-
-        <button onclick="addDespesa()">SALVAR DESPESA</button>
+    <div class="mini-card" style="border-color: var(--red);" onclick="abrirDetalhes('categorias')">
+        <h4>Gastos</h4>
+        <p id="resGasto">R$ 0</p>
     </div>
-
-    <button class="btn-toggle" onclick="toggleForm('formReceita')">💸 Adicionar Receita</button>
-    <div id="formReceita" class="card hidden">
-        <input id="descReceita" placeholder="Ex: Salário, Venda">
-        <input id="valorReceita" type="number" placeholder="Valor">
-        <button onclick="addReceita()">SALVAR RECEITA</button>
+    <div class="mini-card" id="cardSaldo" onclick="abrirDetalhes('resumo')">
+        <h4>Saldo</h4>
+        <p id="resSaldo">R$ 0</p>
     </div>
+</div>
 
-    <div class="secao-titulo">Detalhamento</div>
-    <div id="listaGeral"></div>
+<div class="status-row">
+    <div class="card-status" style="color: var(--green)" onclick="abrirDetalhes('pago')">Pago<br><span id="sPago">0</span></div>
+    <div class="card-status" style="color: var(--yellow)" onclick="abrirDetalhes('agendado')">Agendado<br><span id="sAgendado">0</span></div>
+    <div class="card-status" style="color: var(--red)" onclick="abrirDetalhes('pendente')">Pendente<br><span id="sPendente">0</span></div>
+</div>
+
+<button onclick="toggleElement('formAdd')">➕ Lançar Nova Conta</button>
+
+<div id="formAdd" class="modal hidden">
+    <h3>Nova Despesa</h3>
+    <input id="nome" placeholder="Nome da despesa">
+    <input id="valor" type="number" placeholder="Valor total">
+    <input id="parcelas" type="number" placeholder="Parcelas (ex: 10)">
+    <input id="dataVenc" type="date"> <select id="categoria">
+        <option value="Contas Fixas">Contas Fixas</option>
+        <option value="Cartão Visa">Cartão Visa</option>
+        <option value="Cartão Elo">Cartão Elo</option>
+        <option value="Boleto">Boleto</option>
+    </select>
+
+    <select id="status">
+        <option value="pendente">Pendente</option>
+        <option value="agendado">Agendado</option>
+        <option value="pago">Pago</option>
+    </select>
+
+    <select id="responsavel">
+        <option value="meu">Minha conta</option>
+        <option value="outro">De outra pessoa</option>
+    </select>
+    <input id="pessoa" placeholder="Nome da pessoa" class="hidden">
+
+    <button onclick="salvarDespesa()">SALVAR TUDO</button>
+</div>
+
+<div id="modalDetalhes" class="modal hidden">
+    <h3 id="tituloDetalhe">Detalhes</h3>
+    <div id="corpoDetalhe"></div>
+    <button class="btn-close" onclick="toggleElement('modalDetalhes')">FECHAR</button>
 </div>
 
 <script>
-    let despesas = JSON.parse(localStorage.getItem("despesas")) || [];
-    let receitas = JSON.parse(localStorage.getItem("receitas")) || [];
+    let dataReferencia = new Date(); // Mês atual
+    let despesas = JSON.parse(localStorage.getItem("desp_v3")) || [];
+    let receitas = JSON.parse(localStorage.getItem("receit_v3")) || [];
 
-    function salvar() {
-        localStorage.setItem("despesas", JSON.stringify(despesas));
-        localStorage.setItem("receitas", JSON.stringify(receitas));
-        atualizarTela();
+    function mudarMes(direcao) {
+        dataReferencia.setMonth(dataReferencia.getMonth() + direcao);
+        atualizarPagina();
     }
 
-    function toggleForm(id) {
+    function toggleElement(id) {
         document.getElementById(id).classList.toggle("hidden");
     }
 
-    function addDespesa() {
+    function salvarDespesa() {
         const nome = document.getElementById("nome").value;
         const valorTotal = Number(document.getElementById("valor").value);
         const parcelas = Number(document.getElementById("parcelas").value) || 1;
-        const status = document.getElementById("status").value;
-        const categoria = document.getElementById("categoria").value;
-        const responsavel = document.getElementById("responsavel").value;
-        const pessoa = document.getElementById("pessoa").value;
-
-        if(!nome || !valorTotal) return alert("Preencha nome e valor!");
-
-        for(let i=1; i<=parcelas; i++) {
+        const dataBase = new Date(document.getElementById("dataVenc").value + "T12:00:00");
+        
+        for(let i=0; i < parcelas; i++) {
+            let dataParc = new Date(dataBase);
+            dataParc.setMonth(dataBase.getMonth() + i);
+            
             despesas.push({
                 id: Date.now() + i,
-                nome: `${nome} (${i}/${parcelas})`,
+                nome: `${nome} (${i+1}/${parcelas})`,
                 valor: valorTotal / parcelas,
-                status,
-                categoria,
-                responsavel,
-                pessoa: responsavel === 'outro' ? pessoa : 'Eu'
+                data: dataParc.toISOString().split('T'),
+                status: document.getElementById("status").value,
+                categoria: document.getElementById("categoria").value,
+                responsavel: document.getElementById("responsavel").value,
+                pessoa: document.getElementById("pessoa").value || 'Eu'
             });
         }
+        localStorage.setItem("desp_v3", JSON.stringify(despesas));
+        atualizarPagina();
+        toggleElement('formAdd');
+    }
+
+    function abrirDetalhes(tipo) {
+        const modal = document.getElementById("modalDetalhes");
+        const corpo = document.getElementById("corpoDetalhe");
+        const titulo = document.getElementById("tituloDetalhe");
+        modal.classList.remove("hidden");
+        corpo.innerHTML = "";
+
+        const mesAnoRef = dataReferencia.toISOString().slice(0, 7);
+        const itensMes = despesas.filter(d => d.data.startsWith(mesAnoRef));
+
+        if(tipo === 'categorias') {
+            titulo.innerText = "Gastos por Categoria";
+            let cats = {};
+            itensMes.forEach(d => { if(d.responsavel === 'meu') cats[d.categoria] = (cats[d.categoria] || 0) + d.valor });
+            for(let c in cats) corpo.innerHTML += `<div class="item-row"><span>${c}</span> <b>R$ ${cats[c].toFixed(2)}</b></div>`;
+        } 
         
-        salvar();
-        toggleForm('formDespesa');
-        limparCampos();
+        if(['pago', 'pendente', 'agendado'].includes(tipo)) {
+            titulo.innerText = "Itens " + tipo.toUpperCase();
+            itensMes.filter(d => d.status === tipo).forEach(d => {
+                corpo.innerHTML += `
+                <div class="item-row">
+                    <span>${d.nome}<br><small>${d.data}</small></span>
+                    <div>
+                        <b>R$ ${d.valor.toFixed(2)}</b><br>
+                        <button class="btn-acao" onclick="mudarStatus(${d.id}, 'pago')">P</button>
+                        <button class="btn-acao" onclick="mudarStatus(${d.id}, 'agendado')">A</button>
+                        <button class="btn-acao" onclick="mudarStatus(${d.id}, 'pendente')">!</button>
+                    </div>
+                </div>`;
+            });
+        }
     }
 
-    function addReceita() {
-        const desc = document.getElementById("descReceita").value;
-        const valor = Number(document.getElementById("valorReceita").value);
-        if(!desc || !valor) return;
-        receitas.push({ id: Date.now(), desc, valor });
-        salvar();
-        toggleForm('formReceita');
+    function mudarStatus(id, novoStatus) {
+        let index = despesas.findIndex(d => d.id === id);
+        despesas[index].status = novoStatus;
+        localStorage.setItem("desp_v3", JSON.stringify(despesas));
+        atualizarPagina();
+        toggleElement('modalDetalhes');
     }
 
-    function removerItem(id, tipo) {
-        if(!confirm("Excluir este item?")) return;
-        if(tipo === 'despesa') despesas = despesas.filter(d => d.id !== id);
-        else receitas = receitas.filter(r => r.id !== id);
-        salvar();
-    }
+    function atualizarPagina() {
+        const mesAnoRef = dataReferencia.toISOString().slice(0, 7);
+        const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        document.getElementById("mesAtualExibido").innerText = nomesMeses[dataReferencia.getMonth()] + " " + dataReferencia.getFullYear();
 
-    function atualizarTela() {
-        const lista = document.getElementById("listaGeral");
-        lista.innerHTML = "";
-        
-        let totalPago = 0, totalAgendado = 0, totalPendente = 0;
-        let receitaSoma = receitas.reduce((acc, r) => acc + r.valor, 0);
-
-        // Renderizar Despesas
-        despesas.forEach(d => {
-            // Somar apenas se for "meu"
-            if(d.responsavel === "meu") {
-                if(d.status === "pago") totalPago += d.valor;
-                if(d.status === "agendado") totalAgendado += d.valor;
-                if(d.status === "pendente") totalPendente += d.valor;
+        const itensMes = despesas.filter(d => d.data.startsWith(mesAnoRef));
+        let p=0, a=0, pend=0;
+        itensMes.forEach(d => {
+            if(d.responsavel === 'meu') {
+                if(d.status === 'pago') p += d.valor;
+                if(d.status === 'agendado') a += d.valor;
+                if(d.status === 'pendente') pend += d.valor;
             }
-
-            const div = document.createElement("div");
-            div.className = `item-lista item-${d.status}`;
-            div.innerHTML = `
-                <div class="item-info">
-                    <strong>${d.nome}</strong>
-                    <span>${d.categoria} | Ref: ${d.pessoa}</span>
-                </div>
-                <div style="text-align: right">
-                    <b>R$ ${d.valor.toFixed(2)}</b><br>
-                    <button class="btn-del" onclick="removerItem(${d.id}, 'despesa')">X</button>
-                </div>
-            `;
-            lista.appendChild(div);
         });
 
-        // Atualizar Resumos
-        document.getElementById("totalPago").innerText = `R$ ${totalPago.toFixed(2)}`;
-        document.getElementById("totalAgendado").innerText = `R$ ${totalAgendado.toFixed(2)}`;
-        document.getElementById("totalPendente").innerText = `R$ ${totalPendente.toFixed(2)}`;
-        document.getElementById("receitaTotal").innerText = `R$ ${receitaSoma.toFixed(2)}`;
+        document.getElementById("sPago").innerText = "R$ "+p.toFixed(2);
+        document.getElementById("sAgendado").innerText = "R$ "+a.toFixed(2);
+        document.getElementById("sPendente").innerText = "R$ "+pend.toFixed(2);
+        document.getElementById("resGasto").innerText = "R$ "+(p+a+pend).toFixed(2);
         
-        const saldoFinal = receitaSoma - (totalPago + totalAgendado + totalPendente);
-        const saldoEl = document.getElementById("saldo");
-        saldoEl.innerText = `R$ ${saldoFinal.toFixed(2)}`;
-        saldoEl.className = saldoFinal >= 0 ? "saldo-positivo" : "saldo-negativo";
+        // Simulação de Saldo (Ajuste conforme suas receitas)
+        let totalRec = receitas.reduce((acc, r) => acc + r.valor, 0);
+        document.getElementById("resReceita").innerText = "R$ "+totalRec.toFixed(2);
+        let saldoFinal = totalRec - (p+a+pend);
+        document.getElementById("resSaldo").innerText = "R$ "+saldoFinal.toFixed(2);
     }
 
-    function limparCampos() {
-        document.querySelectorAll('input').forEach(i => i.value = "");
-    }
-
-    atualizarTela();
+    atualizarPagina();
 </script>
 </body>
 </html>
