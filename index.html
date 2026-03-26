@@ -9,25 +9,25 @@
 body { font-family: Arial; background:#111; color:#fff; margin:0; }
 header { text-align:center; padding:15px; background:#222; }
 
-.container { padding:15px; }
+.container { padding:12px; }
+
+.grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
 
 .card {
   background:#1e1e1e;
   padding:15px;
   border-radius:12px;
+  cursor:pointer;
   margin-bottom:15px;
 }
 
-.topo {
-  display:flex;
-  justify-content:space-between;
-}
+.full { grid-column: span 2; }
 
-.topo div {
-  width:32%;
-}
-
-button, input, select {
+input, select, button {
   width:100%;
   padding:10px;
   margin-top:5px;
@@ -50,6 +50,9 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 }
 
 .hidden{display:none;}
+.green{color:#00e676;}
+.red{color:#ff5252;}
+.yellow{color:#ffd740;}
 </style>
 </head>
 
@@ -59,72 +62,62 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 
 <div class="container">
 
-<!-- DASHBOARD -->
-<div class="card topo">
-<div>
-<h4>Receitas</h4>
+<div class="card full">
+<h3>Saldo</h3>
+<p id="saldo">R$ 0</p>
+</div>
+
+<div class="grid">
+
+<div class="card green" onclick="mostrarLista('pago')">
+<h3>Pago</h3>
+<p id="totalPago">0</p>
+</div>
+
+<div class="card yellow" onclick="mostrarLista('agendado')">
+<h3>Agendado</h3>
+<p id="totalAgendado">0</p>
+</div>
+
+<div class="card red" onclick="mostrarLista('pendente')">
+<h3>Pendente</h3>
+<p id="totalPendente">0</p>
+</div>
+
+<div class="card" onclick="toggleReceitas()">
+<h3>Receitas</h3>
 <p id="receitaTotal">0</p>
 </div>
-<div>
-<h4>Despesas</h4>
-<p id="despesaTotal">0</p>
-</div>
-<div>
-<h4>Saldo</h4>
-<p id="saldo">0</p>
-</div>
+
 </div>
 
-<!-- MÊS -->
-<div class="card">
-<select id="mesAtual" onchange="atualizar()"></select>
-</div>
-
-<!-- LISTA -->
-<div id="lista" class="card"></div>
-
-<!-- RECEITAS -->
-<div class="card">
-<h3>Receitas</h3>
-<div id="listaReceitas"></div>
-
-<input id="descReceita" placeholder="Descrição">
-<input id="valorReceita" type="number" placeholder="Valor">
-<button onclick="addReceita()">Adicionar Receita</button>
-</div>
+<div id="lista" class="card hidden"></div>
+<div id="painelReceitas" class="card hidden"></div>
 
 <!-- NOVA DESPESA -->
-<div class="card">
+<div class="card" onclick="toggleForm()">
 <h3>➕ Nova Despesa</h3>
+</div>
 
+<div id="formDespesa" class="card hidden">
 <input id="nome" placeholder="Nome">
-<input id="valor" type="number" placeholder="Valor">
+<input id="valor" type="number" placeholder="Valor total">
 
-<select id="tipo" onchange="mudarTipo()">
-<option value="normal">Normal</option>
-<option value="fixa">Fixa</option>
-<option value="cartao">Cartão</option>
-<option value="boleto">Boleto</option>
-<option value="outros">Outros</option>
+<select id="status">
+<option value="pendente">Pendente</option>
+<option value="agendado">Agendado</option>
+<option value="pago">Pago</option>
 </select>
 
-<input id="data" type="date">
+<select id="responsavel">
+<option value="meu">Meu</option>
+<option value="outro">Outro</option>
+</select>
 
-<div id="parcelasDiv" class="hidden">
+<input id="pessoa" placeholder="Nome da pessoa">
 <input id="parcelas" type="number" placeholder="Parcelas">
-</div>
 
-<div id="cartaoDiv" class="hidden">
-<select id="cartao">
-<option>Visa</option>
-<option>Hipercard</option>
-<option>Mastercard</option>
-<option>Elo</option>
-</select>
-<input id="novoCartao" placeholder="Novo cartão">
-</div>
-
-<button onclick="addDespesa()">Salvar</button>
+<button onclick="add()">Salvar</button>
 </div>
 
 </div>
@@ -134,86 +127,8 @@ button { background:#00c853; color:#fff; font-weight:bold; }
 let despesas = JSON.parse(localStorage.getItem("despesas")) || [];
 let receitas = JSON.parse(localStorage.getItem("receitas")) || [];
 
-let hoje = new Date();
-let ano = hoje.getFullYear();
-
-function gerarMeses(){
-let select = document.getElementById("mesAtual");
-let meses = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-
-meses.forEach((m,i)=>{
-let opt = document.createElement("option");
-opt.value = i;
-opt.innerText = m;
-if(i === hoje.getMonth()) opt.selected = true;
-select.appendChild(opt);
-});
-}
-
-function mudarTipo(){
-let tipo = document.getElementById("tipo").value;
-
-document.getElementById("parcelasDiv").classList.toggle("hidden",
-!(tipo==="cartao"||tipo==="boleto"||tipo==="outros"));
-
-document.getElementById("cartaoDiv").classList.toggle("hidden",
-tipo!=="cartao");
-}
-
-function addReceita(){
-let desc = document.getElementById("descReceita").value;
-let valor = Number(document.getElementById("valorReceita").value);
-
-receitas.push({desc, valor});
-salvar();
-}
-
-function addDespesa(){
-
-let nome = document.getElementById("nome").value;
-let valor = Number(document.getElementById("valor").value);
-let tipo = document.getElementById("tipo").value;
-let data = new Date(document.getElementById("data").value);
-
-let parcelas = Number(document.getElementById("parcelas").value) || 1;
-
-let cartao = document.getElementById("cartao").value;
-let novo = document.getElementById("novoCartao").value;
-if(novo) cartao = novo;
-
-if(tipo==="fixa"){
-for(let i=0;i<12;i++){
-let d = new Date(data);
-d.setMonth(d.getMonth()+i);
-
-despesas.push({
-nome, valor,
-data:d.toISOString(),
-status:"pendente",
-tipo
-});
-}
-} else {
-
-for(let i=0;i<parcelas;i++){
-let d = new Date(data);
-d.setMonth(d.getMonth()+i);
-
-despesas.push({
-nome,
-valor: valor/parcelas,
-data:d.toISOString(),
-status:"pendente",
-tipo,
-cartao: tipo==="cartao"?cartao:null,
-parcela: parcelas>1 ? (i+1)+"/"+parcelas : null
-});
-}
-
-}
-
-salvar();
-}
+let editIndex = null;
+let editReceitaIndex = null;
 
 function salvar(){
 localStorage.setItem("despesas", JSON.stringify(despesas));
@@ -221,23 +136,55 @@ localStorage.setItem("receitas", JSON.stringify(receitas));
 atualizar();
 }
 
-function atualizar(){
+function toggleForm(){
+document.getElementById("formDespesa").classList.toggle("hidden");
+editIndex = null;
+}
 
-let mes = Number(document.getElementById("mesAtual").value);
+function limparCampos(){
+document.getElementById("nome").value="";
+document.getElementById("valor").value="";
+document.getElementById("pessoa").value="";
+document.getElementById("parcelas").value="";
+}
 
-let lista = document.getElementById("lista");
-lista.innerHTML = "<h3>Despesas</h3>";
+function add(){
 
-let totalDespesa = 0;
+let nome = document.getElementById("nome").value;
+let valor = Number(document.getElementById("valor").value);
+let status = document.getElementById("status").value;
+let responsavel = document.getElementById("responsavel").value;
+let pessoa = document.getElementById("pessoa").value;
+let parcelas = Number(document.getElementById("parcelas").value) || 1;
+
+if(editIndex !== null){
+despesas[editIndex] = {nome, valor, status, responsavel, pessoa};
+} else {
+for(let i=1;i<=parcelas;i++){
+despesas.push({
+nome: nome + (parcelas>1 ? " ("+i+"/"+parcelas+")" : ""),
+valor: valor/parcelas,
+status,
+responsavel,
+pessoa
+});
+}
+}
+
+salvar();
+limparCampos();
+alert("Salvo com sucesso!");
+}
+
+function mostrarLista(tipo){
+let lista=document.getElementById("lista");
+lista.classList.remove("hidden");
+
+let html="<h3>"+tipo.toUpperCase()+"</h3>";
 
 despesas.forEach((d,i)=>{
-let dt = new Date(d.data);
-
-if(dt.getMonth()===mes){
-
-totalDespesa += d.valor;
-
-lista.innerHTML += `
+if(d.status===tipo){
+html+=`
 <div class="item">
 <span>${d.nome} - R$ ${d.valor.toFixed(2)}</span>
 <div class="icons">
@@ -248,19 +195,39 @@ lista.innerHTML += `
 }
 });
 
-let receitaTotal = receitas.reduce((t,r)=>t+r.valor,0);
+lista.innerHTML=html;
+}
 
-document.getElementById("receitaTotal").innerText="R$ "+receitaTotal.toFixed(2);
-document.getElementById("despesaTotal").innerText="R$ "+totalDespesa.toFixed(2);
-document.getElementById("saldo").innerText="R$ "+(receitaTotal-totalDespesa).toFixed(2);
+function editar(i){
+let d = despesas[i];
 
-let listaR = document.getElementById("listaReceitas");
-listaR.innerHTML="";
+document.getElementById("nome").value = d.nome;
+document.getElementById("valor").value = d.valor;
+document.getElementById("status").value = d.status;
+document.getElementById("responsavel").value = d.responsavel;
+document.getElementById("pessoa").value = d.pessoa;
+
+editIndex = i;
+document.getElementById("formDespesa").classList.remove("hidden");
+}
+
+function remover(i){
+if(confirm("Deseja excluir esta despesa?")){
+despesas.splice(i,1);
+salvar();
+}
+}
+
+function toggleReceitas(){
+let painel = document.getElementById("painelReceitas");
+painel.classList.toggle("hidden");
+
+let html = "<h3>Receitas</h3>";
 
 receitas.forEach((r,i)=>{
-listaR.innerHTML+=`
+html += `
 <div class="item">
-<span>${r.desc} - R$ ${r.valor}</span>
+<span>${r.desc} — R$ ${r.valor.toFixed(2)}</span>
 <div class="icons">
 <span onclick="editarReceita(${i})">✏️</span>
 <span onclick="removerReceita(${i})">🗑️</span>
@@ -268,32 +235,89 @@ listaR.innerHTML+=`
 </div>`;
 });
 
+html += `
+<button onclick="mostrarFormReceita()">➕ Adicionar Receita</button>
+
+<div id="formReceita" class="hidden">
+<input id="descReceita" placeholder="Descrição">
+<input id="valorReceita" type="number" placeholder="Valor">
+<button onclick="addReceita()">Salvar</button>
+</div>
+`;
+
+painel.innerHTML = html;
 }
 
-function remover(i){
-despesas.splice(i,1);
+function mostrarFormReceita(){
+document.getElementById("formReceita").classList.remove("hidden");
+editReceitaIndex = null;
+}
+
+function addReceita(){
+let desc = document.getElementById("descReceita").value;
+let valor = Number(document.getElementById("valorReceita").value);
+
+if(editReceitaIndex !== null){
+receitas[editReceitaIndex] = {desc, valor};
+} else {
+receitas.push({desc, valor});
+}
+
 salvar();
-}
-
-function removerReceita(i){
-receitas.splice(i,1);
-salvar();
-}
-
-function editar(i){
-let d = despesas[i];
-alert("Edição simplificada por enquanto (vamos melhorar depois)");
+toggleReceitas();
+toggleReceitas();
 }
 
 function editarReceita(i){
 let r = receitas[i];
+
+toggleReceitas();
+toggleReceitas();
+
+setTimeout(()=>{
 document.getElementById("descReceita").value = r.desc;
 document.getElementById("valorReceita").value = r.valor;
-receitas.splice(i,1);
-salvar();
+editReceitaIndex = i;
+document.getElementById("formReceita").classList.remove("hidden");
+},100);
 }
 
-gerarMeses();
+function removerReceita(i){
+if(confirm("Deseja excluir esta receita?")){
+receitas.splice(i,1);
+salvar();
+toggleReceitas();
+toggleReceitas();
+}
+}
+
+function atualizar(){
+
+let receitaTotal = receitas.reduce((t,r)=> t+r.valor, 0);
+
+let pago=0, agendado=0, pendente=0;
+
+despesas.forEach(d=>{
+if(d.responsavel!=="meu") return;
+
+if(d.status==="pago") pago+=d.valor;
+if(d.status==="agendado") agendado+=d.valor;
+if(d.status==="pendente") pendente+=d.valor;
+});
+
+document.getElementById("totalPago").innerText="R$ "+pago.toFixed(2);
+document.getElementById("totalAgendado").innerText="R$ "+agendado.toFixed(2);
+document.getElementById("totalPendente").innerText="R$ "+pendente.toFixed(2);
+document.getElementById("receitaTotal").innerText="R$ "+receitaTotal.toFixed(2);
+
+let saldo=receitaTotal-(pago+agendado+pendente);
+
+let saldoEl=document.getElementById("saldo");
+saldoEl.innerText="R$ "+saldo.toFixed(2);
+saldoEl.className=saldo>=0?"green":"red";
+
+}
+
 atualizar();
 
 </script>
