@@ -1,329 +1,206 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Financeiro</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Financeiro Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #7c4dff;
+            --bg: #f5f7fb;
+            --card: #ffffff;
+            --text: #333;
+            --green: #00c853;
+            --red: #ff5252;
+        }
 
-<style>
-body { font-family: Arial; background:#111; color:#fff; margin:0; }
-header { text-align:center; padding:15px; background:#222; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
+        .header { text-align: center; padding: 20px; background: var(--card); border-radius: 0 0 20px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .container { padding: 15px; max-width: 500px; margin: auto; }
 
-.container { padding:12px; }
+        /* Saldo Central */
+        .balance-box { text-align: center; margin: 20px 0; }
+        .balance-box h2 { font-size: 28px; margin: 5px 0; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .sum-card { background: var(--card); padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
 
-.grid3 {
-  display:grid;
-  grid-template-columns:1fr 1fr 1fr;
-  gap:10px;
-}
+        /* Gráfico */
+        .chart-container { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 20px; }
+        canvas { max-height: 200px; }
 
-.grid2 {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  text-align: center;
-}
+        /* Filtros de Status */
+        .filter-bar { display: flex; justify-content: space-around; margin-bottom: 15px; }
+        .filter-btn { background: #eee; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 12px; }
+        .filter-btn.active { background: var(--primary); color: white; }
 
-.card {
-  background:#1e1e1e;
-  padding:12px;
-  border-radius:10px;
-  margin-bottom:10px;
-  cursor:pointer;
-}
+        /* Lista de Itens */
+        .card-item { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Botão Flutuante de Adicionar */
+        .fab { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 15px rgba(124, 77, 255, 0.4); cursor: pointer; border: none; }
 
-.greenCard { background:#1b5e20; }
-.redCard { background:#b71c1c; }
-
-input, select, button {
-  width:100%;
-  padding:8px;
-  margin-top:5px;
-  border-radius:6px;
-  border:none;
-  box-sizing: border-box;
-}
-
-button { background:#00c853; color:#fff; font-weight:bold; cursor:pointer; }
-
-.item {
-  display:flex;
-  justify-content:space-between;
-  margin-bottom:6px;
-  border-bottom: 1px solid #333;
-  padding-bottom: 5px;
-}
-
-.icons span {
-  margin-left:10px;
-  cursor:pointer;
-}
-
-.hidden{display:none;}
-.green{color:#00e676;}
-.red{color:#ff5252;}
-</style>
+        .hidden { display: none; }
+        .green { color: var(--green); }
+        .red { color: var(--red); }
+    </style>
 </head>
-
 <body>
 
-<header>💰 Meu Financeiro</header>
+<div class="header">
+    <select id="selectMes" onchange="atualizar()">
+        <option value="Janeiro">Janeiro</option>
+        <option value="Fevereiro">Fevereiro</option>
+        </select>
+    <div class="balance-box">
+        <small>Saldo em conta</small>
+        <h2 id="saldoTotal">R$ 0,00</h2>
+    </div>
+</div>
 
 <div class="container">
+    <div class="summary-grid">
+        <div class="sum-card">
+            <small class="green">▲ Receitas</small>
+            <div id="resumoReceita" class="green">R$ 0,00</div>
+        </div>
+        <div class="sum-card">
+            <small class="red">▼ Despesas</small>
+            <div id="resumoDespesa" class="red">R$ 0,00</div>
+        </div>
+    </div>
 
-<div class="grid3">
-<div class="card" onclick="toggleReceitas()">
-<h3>Receitas</h3>
-<p id="receitaTotal">R$ 0.00</p>
+    <div class="chart-container">
+        <canvas id="meuGrafico"></canvas>
+    </div>
+
+    <div class="filter-bar">
+        <button class="filter-btn active" onclick="filtrar('pendente', this)">PENDENTES</button>
+        <button class="filter-btn" onclick="filtrar('agendado', this)">AGENDADO</button>
+        <button class="filter-btn" onclick="filtrar('pago', this)">PAGOS</button>
+    </div>
+
+    <div id="listaPrincipal">
+        </div>
 </div>
 
-<div class="card" onclick="toggleDespesas()">
-<h3>Despesas</h3>
-<p id="gastosTotal">R$ 0.00</p>
+<div id="formContainer" class="container hidden" style="background: white; position: fixed; top: 0; height: 100%; z-index: 10;">
+    <h3>Novo Lançamento</h3>
+    <input type="text" id="nome" placeholder="Descrição">
+    <input type="number" id="valor" placeholder="Valor">
+    <select id="tipo">
+        <option value="despesa">Despesa</option>
+        <option value="receita">Receita</option>
+    </select>
+    <select id="cat">
+        <option value="Fixa">Fixa</option>
+        <option value="Cartão">Cartão</option>
+        <option value="Boleto">Boleto</option>
+        <option value="Outros">Outros</option>
+    </select>
+    <select id="status">
+        <option value="pendente">Pendente</option>
+        <option value="agendado">Agendado</option>
+        <option value="pago">Pago</option>
+    </select>
+    <button onclick="salvarNovo()" style="width:100%; padding:15px; background:var(--green); border:none; color:white; margin-top:10px;">SALVAR</button>
+    <button onclick="fecharForm()" style="width:100%; padding:10px; background:#ccc; border:none; margin-top:5px;">CANCELAR</button>
 </div>
 
-<div class="card">
-<h3>Saldo</h3>
-<p id="saldo">R$ 0.00</p>
-</div>
-</div>
-
-<div class="grid2">
-<div class="card greenCard" onclick="toggleFormReceita()">Receita</div>
-<div class="card redCard" onclick="toggleFormDespesa()">Despesa</div>
-</div>
-
-<div id="formReceita" class="card hidden">
-<label>Descrição</label>
-<input id="descReceita">
-
-<label>Valor</label>
-<input id="valorReceita" type="number">
-
-<button onclick="addReceita()">Salvar</button>
-</div>
-
-<div id="formDespesa" class="card hidden">
-<label>Nome</label>
-<input id="nome">
-
-<label>Valor</label>
-<input id="valor" type="number">
-
-<label>Data</label>
-<input id="data" type="date">
-
-<label>Categoria</label>
-<select id="categoria">
-  <option value="Fixa">Despesa Fixa</option>
-  <option value="Cartão">Cartão</option>
-  <option value="Boleto">Boleto</option>
-  <option value="Outros">Outros</option>
-</select>
-
-<label>Status</label>
-<select id="status">
-<option value="pendente">Pendente</option>
-<option value="agendado">Agendado</option>
-<option value="pago">Pago</option>
-</select>
-
-<button onclick="add()">Salvar</button>
-</div>
-
-<div id="listaReceitas" class="card hidden"></div>
-<div id="listaDespesas" class="card hidden"></div>
-
-</div>
+<button class="fab" onclick="abrirForm()">+</button>
 
 <script>
+let dados = JSON.parse(localStorage.getItem("financeiro_v2")) || [];
+let filtroAtual = 'pendente';
+let chart;
 
-let despesas = JSON.parse(localStorage.getItem("despesas")) || [];
-let receitas = JSON.parse(localStorage.getItem("receitas")) || [];
+function abrirForm() { document.getElementById("formContainer").classList.remove("hidden"); }
+function fecharForm() { document.getElementById("formContainer").classList.add("hidden"); }
 
-let editIndex = null;
-let editReceitaIndex = null;
-
-function salvar(){
-localStorage.setItem("despesas", JSON.stringify(despesas));
-localStorage.setItem("receitas", JSON.stringify(receitas));
-atualizar();
+function salvarNovo() {
+    const item = {
+        id: Date.now(),
+        nome: document.getElementById("nome").value,
+        valor: parseFloat(document.getElementById("valor").value),
+        tipo: document.getElementById("tipo").value,
+        categoria: document.getElementById("cat").value,
+        status: document.getElementById("status").value,
+        mes: document.getElementById("selectMes").value
+    };
+    dados.push(item);
+    localStorage.setItem("financeiro_v2", JSON.stringify(dados));
+    fecharForm();
+    atualizar();
 }
 
-function msg(t){ alert(t); }
-
-// TOGGLES
-function toggleFormReceita(){
-document.getElementById("formReceita").classList.toggle("hidden");
+function filtrar(status, btn) {
+    filtroAtual = status;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    atualizar();
 }
 
-function toggleFormDespesa(){
-document.getElementById("formDespesa").classList.toggle("hidden");
+function excluir(id) {
+    dados = dados.filter(d => d.id !== id);
+    localStorage.setItem("financeiro_v2", JSON.stringify(dados));
+    atualizar();
 }
 
-function toggleReceitas(){
-let div = document.getElementById("listaReceitas");
-div.classList.toggle("hidden");
-renderReceitas();
+function atualizar() {
+    const mes = document.getElementById("selectMes").value;
+    const lista = dados.filter(d => d.mes === mes);
+    
+    const rec = lista.filter(d => d.tipo === 'receita').reduce((a, b) => a + b.valor, 0);
+    const des = lista.filter(d => d.tipo === 'despesa').reduce((a, b) => a + b.valor, 0);
+    const saldo = rec - des;
+
+    document.getElementById("resumoReceita").innerText = `R$ ${rec.toFixed(2)}`;
+    document.getElementById("resumoDespesa").innerText = `R$ ${des.toFixed(2)}`;
+    const saldoEl = document.getElementById("saldoTotal");
+    saldoEl.innerText = `R$ ${saldo.toFixed(2)}`;
+    saldoEl.className = saldo >= 0 ? "green" : "red";
+
+    // Renderizar Lista Filtrada
+    const listaFiltro = lista.filter(d => d.status === filtroAtual);
+    let html = "";
+    listaFiltro.forEach(item => {
+        html += `
+            <div class="card-item">
+                <div>
+                    <strong>${item.nome}</strong><br>
+                    <small>${item.categoria}</small>
+                </div>
+                <div style="text-align:right">
+                    <span class="${item.tipo === 'receita' ? 'green' : 'red'}">R$ ${item.valor.toFixed(2)}</span><br>
+                    <span onclick="excluir(${item.id})" style="cursor:pointer">🗑️</span>
+                </div>
+            </div>
+        `;
+    });
+    document.getElementById("listaPrincipal").innerHTML = html;
+    desenharGrafico(lista);
 }
 
-function toggleDespesas(){
-let div = document.getElementById("listaDespesas");
-div.classList.toggle("hidden");
-renderDespesas();
-}
+function desenharGrafico(lista) {
+    const cats = ["Fixa", "Cartão", "Boleto", "Outros"];
+    const valores = cats.map(c => lista.filter(d => d.categoria === c && d.tipo === 'despesa').reduce((a,b) => a + b.valor, 0));
 
-// RECEITAS
-function addReceita(){
-let desc = document.getElementById("descReceita").value;
-let valor = Number(document.getElementById("valorReceita").value);
-
-if(!desc) return msg("Preencha descrição");
-if(!valor) return msg("Preencha valor");
-
-if(editReceitaIndex !== null){
-receitas[editReceitaIndex] = {desc, valor};
-editReceitaIndex = null;
-} else {
-receitas.push({desc, valor});
-}
-
-document.getElementById("descReceita").value="";
-document.getElementById("valorReceita").value="";
-
-salvar();
-renderReceitas();
-msg("Salvo!");
-}
-
-function renderReceitas(){
-let div = document.getElementById("listaReceitas");
-let html="<h3>Receitas</h3>";
-
-receitas.forEach((r,i)=>{
-html+=`
-<div class="item">
-<span>${r.desc} - R$ ${r.valor.toFixed(2)}</span>
-<div class="icons">
-<span onclick="editarReceita(${i})">✏️</span>
-<span onclick="removerReceita(${i})">🗑️</span>
-</div>
-</div>`;
-});
-
-div.innerHTML = html;
-}
-
-function editarReceita(i){
-let r = receitas[i];
-document.getElementById("descReceita").value = r.desc;
-document.getElementById("valorReceita").value = r.valor;
-editReceitaIndex = i;
-if(document.getElementById("formReceita").classList.contains("hidden")) toggleFormReceita();
-}
-
-function removerReceita(i){
-if(confirm("Excluir receita?")){
-receitas.splice(i,1);
-salvar();
-renderReceitas();
-msg("Excluído!");
-}
-}
-
-// DESPESAS
-function add(){
-let nome = document.getElementById("nome").value;
-let valor = Number(document.getElementById("valor").value);
-let data = document.getElementById("data").value;
-let status = document.getElementById("status").value;
-let categoria = document.getElementById("categoria").value;
-
-if(!nome) return msg("Preencha nome");
-if(!valor) return msg("Preencha valor");
-if(!data) return msg("Preencha data");
-
-if(editIndex !== null){
-despesas[editIndex] = {nome, valor, data, status, categoria};
-editIndex = null;
-} else {
-despesas.push({nome, valor, data, status, categoria});
-}
-
-document.getElementById("nome").value="";
-document.getElementById("valor").value="";
-document.getElementById("data").value="";
-
-salvar();
-renderDespesas();
-msg("Salvo!");
-}
-
-function renderDespesas(){
-let div = document.getElementById("listaDespesas");
-let html="<h3>Despesas</h3>";
-
-despesas.forEach((d,i)=>{
-html+=`
-<div class="item">
-<span><strong>[${d.categoria || 'Geral'}]</strong> ${d.nome} - R$ ${d.valor.toFixed(2)}</span>
-<div class="icons">
-<span onclick="pagar(${i})">🅿️</span>
-<span onclick="editar(${i})">✏️</span>
-<span onclick="remover(${i})">🗑️</span>
-</div>
-</div>`;
-});
-
-div.innerHTML = html;
-}
-
-function pagar(i){
-if(confirm("Marcar como PAGO?")){
-despesas[i].status="pago";
-salvar();
-renderDespesas();
-}
-}
-
-function editar(i){
-let d = despesas[i];
-document.getElementById("nome").value = d.nome;
-document.getElementById("valor").value = d.valor;
-document.getElementById("data").value = d.data;
-document.getElementById("status").value = d.status;
-document.getElementById("categoria").value = d.categoria || "Outros";
-
-editIndex = i;
-if(document.getElementById("formDespesa").classList.contains("hidden")) toggleFormDespesa();
-}
-
-function remover(i){
-if(confirm("Excluir despesa?")){
-despesas.splice(i,1);
-salvar();
-renderDespesas();
-msg("Excluído!");
-}
-}
-
-// TOTAL
-function atualizar(){
-let receitaTotal = receitas.reduce((t,r)=> t+r.valor, 0);
-let gastosTotal = despesas.reduce((t,d)=> t+d.valor, 0);
-
-document.getElementById("receitaTotal").innerText="R$ "+receitaTotal.toFixed(2);
-document.getElementById("gastosTotal").innerText="R$ "+gastosTotal.toFixed(2);
-
-let saldo=receitaTotal-gastosTotal;
-let saldoEl=document.getElementById("saldo");
-saldoEl.innerText="R$ "+saldo.toFixed(2);
-saldoEl.className=saldo>=0?"green":"red";
+    if (chart) chart.destroy();
+    const ctx = document.getElementById('meuGrafico').getContext('2d');
+    chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: cats,
+            datasets: [{
+                data: valores,
+                backgroundColor: ['#7c4dff', '#00bcd4', '#ff5252', '#9e9e9e']
+            }]
+        },
+        options: { plugins: { legend: { position: 'right' } } }
+    });
 }
 
 atualizar();
-
 </script>
-
 </body>
 </html>
