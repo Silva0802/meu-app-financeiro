@@ -7,43 +7,42 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --primary: purple;
-            --bg: lightgray;
-            --card: white;
-            --text: black;
-            --green: green;
-            --red: red;
+            --primary: #7c4dff;
+            --bg: #f5f7fb;
+            --card: #ffffff;
+            --text: #333;
+            --green: #00c853;
+            --red: #ff5252;
         }
 
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
-        .header { text-align: center; padding: 20px; background: var(--card); border-radius: 0 0 20px 20px; }
-
-        .balance-box h2 { font-size: 32px; font-weight: bold; }
-
+        .header { text-align: center; padding: 20px; background: var(--card); border-radius: 0 0 20px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .container { padding: 15px; max-width: 500px; margin: auto; }
 
+        /* Saldo Central */
+        .balance-box { text-align: center; margin: 20px 0; }
+        .balance-box h2 { font-size: 28px; margin: 5px 0; }
         .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .sum-card { background: var(--card); padding: 15px; border-radius: 15px; text-align: center; }
+        .sum-card { background: var(--card); padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
 
-        #resumoReceita, #resumoDespesa {
-            font-size: 18px;
-            font-weight: bold;
-        }
-
+        /* Gráfico */
         .chart-container { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 20px; }
         canvas { max-height: 200px; }
 
+        /* Filtros de Status */
         .filter-bar { display: flex; justify-content: space-around; margin-bottom: 15px; }
-        .filter-btn { background: lightgray; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 12px; }
-        .filter-btn.active { background: purple; color: white; }
+        .filter-btn { background: #eee; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 12px; }
+        .filter-btn.active { background: var(--primary); color: white; }
 
+        /* Lista de Itens */
         .card-item { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-
-        .fab { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: purple; color: white; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; border: none; }
+        
+        /* Botão Flutuante de Adicionar */
+        .fab { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 15px rgba(124, 77, 255, 0.4); cursor: pointer; border: none; }
 
         .hidden { display: none; }
-        .green { color: green; }
-        .red { color: red; }
+        .green { color: var(--green); }
+        .red { color: var(--red); }
     </style>
 </head>
 <body>
@@ -52,18 +51,7 @@
     <select id="selectMes" onchange="atualizar()">
         <option value="Janeiro">Janeiro</option>
         <option value="Fevereiro">Fevereiro</option>
-        <option value="Março">Março</option>
-        <option value="Abril">Abril</option>
-        <option value="Maio">Maio</option>
-        <option value="Junho">Junho</option>
-        <option value="Julho">Julho</option>
-        <option value="Agosto">Agosto</option>
-        <option value="Setembro">Setembro</option>
-        <option value="Outubro">Outubro</option>
-        <option value="Novembro">Novembro</option>
-        <option value="Dezembro">Dezembro</option>
-    </select>
-
+        </select>
     <div class="balance-box">
         <small>Saldo em conta</small>
         <h2 id="saldoTotal">R$ 0,00</h2>
@@ -92,7 +80,8 @@
         <button class="filter-btn" onclick="filtrar('pago', this)">PAGOS</button>
     </div>
 
-    <div id="listaPrincipal"></div>
+    <div id="listaPrincipal">
+        </div>
 </div>
 
 <div id="formContainer" class="container hidden" style="background: white; position: fixed; top: 0; height: 100%; z-index: 10;">
@@ -114,8 +103,8 @@
         <option value="agendado">Agendado</option>
         <option value="pago">Pago</option>
     </select>
-    <button onclick="salvarNovo()" style="width:100%; padding:15px; background:green; border:none; color:white; margin-top:10px;">SALVAR</button>
-    <button onclick="fecharForm()" style="width:100%; padding:10px; background:lightgray; border:none; margin-top:5px;">CANCELAR</button>
+    <button onclick="salvarNovo()" style="width:100%; padding:15px; background:var(--green); border:none; color:white; margin-top:10px;">SALVAR</button>
+    <button onclick="fecharForm()" style="width:100%; padding:10px; background:#ccc; border:none; margin-top:5px;">CANCELAR</button>
 </div>
 
 <button class="fab" onclick="abrirForm()">+</button>
@@ -128,32 +117,18 @@ let chart;
 function abrirForm() { document.getElementById("formContainer").classList.remove("hidden"); }
 function fecharForm() { document.getElementById("formContainer").classList.add("hidden"); }
 
-document.getElementById("tipo").addEventListener("change", function() {
-    const statusField = document.getElementById("status");
-    statusField.style.display = this.value === "receita" ? "none" : "block";
-});
-
 function salvarNovo() {
-    const tipo = document.getElementById("tipo").value;
-
     const item = {
         id: Date.now(),
         nome: document.getElementById("nome").value,
         valor: parseFloat(document.getElementById("valor").value),
-        tipo: tipo,
+        tipo: document.getElementById("tipo").value,
         categoria: document.getElementById("cat").value,
-        status: tipo === 'despesa' ? document.getElementById("status").value : 'receita',
+        status: document.getElementById("status").value,
         mes: document.getElementById("selectMes").value
     };
-
     dados.push(item);
     localStorage.setItem("financeiro_v2", JSON.stringify(dados));
-
-    document.getElementById("nome").value = "";
-    document.getElementById("valor").value = "";
-
-    alert("Salvo com sucesso!");
-
     fecharForm();
     atualizar();
 }
@@ -174,7 +149,7 @@ function excluir(id) {
 function atualizar() {
     const mes = document.getElementById("selectMes").value;
     const lista = dados.filter(d => d.mes === mes);
-
+    
     const rec = lista.filter(d => d.tipo === 'receita').reduce((a, b) => a + b.valor, 0);
     const des = lista.filter(d => d.tipo === 'despesa').reduce((a, b) => a + b.valor, 0);
     const saldo = rec - des;
@@ -185,8 +160,8 @@ function atualizar() {
     saldoEl.innerText = `R$ ${saldo.toFixed(2)}`;
     saldoEl.className = saldo >= 0 ? "green" : "red";
 
-    const listaFiltro = lista.filter(d => d.tipo === 'receita' || d.status === filtroAtual);
-
+    // Renderizar Lista Filtrada
+    const listaFiltro = lista.filter(d => d.status === filtroAtual);
     let html = "";
     listaFiltro.forEach(item => {
         html += `
@@ -202,7 +177,6 @@ function atualizar() {
             </div>
         `;
     });
-
     document.getElementById("listaPrincipal").innerHTML = html;
     desenharGrafico(lista);
 }
@@ -213,32 +187,20 @@ function desenharGrafico(lista) {
 
     if (chart) chart.destroy();
     const ctx = document.getElementById('meuGrafico').getContext('2d');
-
     chart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: cats,
             datasets: [{
                 data: valores,
-                backgroundColor: ['purple', 'cyan', 'red', 'gray']
+                backgroundColor: ['#7c4dff', '#00bcd4', '#ff5252', '#9e9e9e']
             }]
         },
-        options: {
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: {
-                        font: { size: 12, weight: 'bold' },
-                        color: 'black'
-                    }
-                }
-            }
-        }
+        options: { plugins: { legend: { position: 'right' } } }
     });
 }
 
 atualizar();
 </script>
-
 </body>
 </html>
