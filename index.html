@@ -1,229 +1,240 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Meu Financeiro Pro</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Financeiro Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: purple;
+            --bg: lightgray;
+            --card: white;
+            --text: black;
+            --green: green;
+            --red: red;
+        }
 
-<style>
-:root {
-    --primary: purple;
-    --bg: lightgray;
-    --card: white;
-    --text: black;
-    --green: green;
-    --red: red;
-}
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
+        .header { text-align: center; padding: 20px; background: var(--card); border-radius: 0 0 20px 20px; }
 
-body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
+        .balance-box h2 { font-size: 32px; font-weight: bold; }
 
-.header { text-align: center; padding: 20px; background: var(--card); border-radius: 0 0 20px 20px; }
+        .container { padding: 15px; max-width: 500px; margin: auto; }
 
-.balance-box h2 { font-size: 32px; font-weight: bold; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .sum-card { background: var(--card); padding: 15px; border-radius: 15px; text-align: center; }
 
-.container { padding: 15px; max-width: 500px; margin: auto; }
+        #resumoReceita, #resumoDespesa {
+            font-size: 18px;
+            font-weight: bold;
+        }
 
-.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .chart-container { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 20px; }
+        canvas { max-height: 200px; }
 
-.sum-card { background: var(--card); padding: 15px; border-radius: 15px; text-align: center; }
+        .filter-bar { display: flex; justify-content: space-around; margin-bottom: 15px; }
+        .filter-btn { background: lightgray; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 12px; }
+        .filter-btn.active { background: purple; color: white; }
 
-#resumoReceita, #resumoDespesa {
-    font-size: 18px;
-    font-weight: bold;
-}
+        .card-item { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
 
-.chart-container { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 20px; }
-canvas { max-height: 200px; }
+        .fab { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: purple; color: white; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; border: none; }
 
-.filter-bar { display: flex; justify-content: space-around; margin-bottom: 15px; }
-
-.filter-btn { background: lightgray; border: none; padding: 8px 15px; border-radius: 20px; }
-
-.filter-btn.active { background: purple; color: white; }
-
-.card-item {
-    background: var(--card);
-    padding: 15px;
-    border-radius: 12px;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-}
-
-.green { color: green; }
-.red { color: red; }
-
-.fab {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: purple;
-    color: white;
-    width: 60px;
-    height: 60px;
-    border-radius: 30px;
-    font-size: 30px;
-}
-</style>
+        .hidden { display: none; }
+        .green { color: green; }
+        .red { color: red; }
+    </style>
 </head>
-
 <body>
 
 <div class="header">
-<select id="selectMes" onchange="atualizar()">
-<option>Janeiro</option><option>Fevereiro</option><option>Março</option>
-<option>Abril</option><option>Maio</option><option>Junho</option>
-<option>Julho</option><option>Agosto</option><option>Setembro</option>
-<option>Outubro</option><option>Novembro</option><option>Dezembro</option>
-</select>
+    <select id="selectMes" onchange="atualizar()">
+        <option value="Janeiro">Janeiro</option>
+        <option value="Fevereiro">Fevereiro</option>
+        <option value="Março">Março</option>
+        <option value="Abril">Abril</option>
+        <option value="Maio">Maio</option>
+        <option value="Junho">Junho</option>
+        <option value="Julho">Julho</option>
+        <option value="Agosto">Agosto</option>
+        <option value="Setembro">Setembro</option>
+        <option value="Outubro">Outubro</option>
+        <option value="Novembro">Novembro</option>
+        <option value="Dezembro">Dezembro</option>
+    </select>
 
-<div class="balance-box">
-<small>Saldo</small>
-<h2 id="saldoTotal">R$ 0,00</h2>
-</div>
+    <div class="balance-box">
+        <small>Saldo em conta</small>
+        <h2 id="saldoTotal">R$ 0,00</h2>
+    </div>
 </div>
 
 <div class="container">
+    <div class="summary-grid">
+        <div class="sum-card">
+            <small class="green">▲ Receitas</small>
+            <div id="resumoReceita" class="green">R$ 0,00</div>
+        </div>
+        <div class="sum-card">
+            <small class="red">▼ Despesas</small>
+            <div id="resumoDespesa" class="red">R$ 0,00</div>
+        </div>
+    </div>
 
-<div class="summary-grid">
-<div class="sum-card">
-<small class="green">Receitas</small>
-<div id="resumoReceita" class="green">R$ 0,00</div>
+    <div class="chart-container">
+        <canvas id="meuGrafico"></canvas>
+    </div>
+
+    <div class="filter-bar">
+        <button class="filter-btn active" onclick="filtrar('pendente', this)">PENDENTES</button>
+        <button class="filter-btn" onclick="filtrar('agendado', this)">AGENDADO</button>
+        <button class="filter-btn" onclick="filtrar('pago', this)">PAGOS</button>
+    </div>
+
+    <div id="listaPrincipal"></div>
 </div>
 
-<div class="sum-card">
-<small class="red">Despesas</small>
-<div id="resumoDespesa" class="red">R$ 0,00</div>
-</div>
-</div>
-
-<div class="chart-container">
-<canvas id="meuGrafico"></canvas>
-</div>
-
-<div id="listaPrincipal"></div>
-
-</div>
-
-<div id="formContainer" class="container hidden" style="background:white; position:fixed; top:0; height:100%;">
-<input id="nome" placeholder="Descrição">
-<input id="valor" type="number" placeholder="Valor">
-
-<select id="tipo">
-<option value="despesa">Despesa</option>
-<option value="receita">Receita</option>
-</select>
-
-<select id="cat">
-<option>Fixa</option>
-<option>Cartão</option>
-<option>Boleto</option>
-<option>Outros</option>
-</select>
-
-<select id="status">
-<option value="pendente">Pendente</option>
-<option value="pago">Pago</option>
-</select>
-
-<button onclick="salvarNovo()">Salvar</button>
-<button onclick="fecharForm()">Cancelar</button>
+<div id="formContainer" class="container hidden" style="background: white; position: fixed; top: 0; height: 100%; z-index: 10;">
+    <h3>Novo Lançamento</h3>
+    <input type="text" id="nome" placeholder="Descrição">
+    <input type="number" id="valor" placeholder="Valor">
+    <select id="tipo">
+        <option value="despesa">Despesa</option>
+        <option value="receita">Receita</option>
+    </select>
+    <select id="cat">
+        <option value="Fixa">Fixa</option>
+        <option value="Cartão">Cartão</option>
+        <option value="Boleto">Boleto</option>
+        <option value="Outros">Outros</option>
+    </select>
+    <select id="status">
+        <option value="pendente">Pendente</option>
+        <option value="agendado">Agendado</option>
+        <option value="pago">Pago</option>
+    </select>
+    <button onclick="salvarNovo()" style="width:100%; padding:15px; background:green; border:none; color:white; margin-top:10px;">SALVAR</button>
+    <button onclick="fecharForm()" style="width:100%; padding:10px; background:lightgray; border:none; margin-top:5px;">CANCELAR</button>
 </div>
 
 <button class="fab" onclick="abrirForm()">+</button>
 
 <script>
 let dados = JSON.parse(localStorage.getItem("financeiro_v2")) || [];
+let filtroAtual = 'pendente';
 let chart;
 
-function abrirForm(){document.getElementById("formContainer").classList.remove("hidden");}
-function fecharForm(){document.getElementById("formContainer").classList.add("hidden");}
+function abrirForm() { document.getElementById("formContainer").classList.remove("hidden"); }
+function fecharForm() { document.getElementById("formContainer").classList.add("hidden"); }
 
-document.getElementById("tipo").addEventListener("change", function(){
-document.getElementById("status").style.display = this.value==="receita"?"none":"block";
+document.getElementById("tipo").addEventListener("change", function() {
+    const statusField = document.getElementById("status");
+    statusField.style.display = this.value === "receita" ? "none" : "block";
 });
 
-function salvarNovo(){
-const tipo=document.getElementById("tipo").value;
+function salvarNovo() {
+    const tipo = document.getElementById("tipo").value;
 
-const item={
-id:Date.now(),
-nome:nome.value,
-valor:parseFloat(valor.value),
-tipo:tipo,
-categoria:cat.value,
-status:tipo==="despesa"?status.value:"receita",
-mes:selectMes.value
-};
+    const item = {
+        id: Date.now(),
+        nome: document.getElementById("nome").value,
+        valor: parseFloat(document.getElementById("valor").value),
+        tipo: tipo,
+        categoria: document.getElementById("cat").value,
+        status: tipo === 'despesa' ? document.getElementById("status").value : 'receita',
+        mes: document.getElementById("selectMes").value
+    };
 
-dados.push(item);
-localStorage.setItem("financeiro_v2", JSON.stringify(dados));
+    dados.push(item);
+    localStorage.setItem("financeiro_v2", JSON.stringify(dados));
 
-nome.value="";
-valor.value="";
+    document.getElementById("nome").value = "";
+    document.getElementById("valor").value = "";
 
-alert("Salvo com sucesso!");
+    alert("Salvo com sucesso!");
 
-fecharForm();
-atualizar();
+    fecharForm();
+    atualizar();
 }
 
-function atualizar(){
-const mes=selectMes.value;
-const lista=dados.filter(d=>d.mes===mes);
-
-const rec=lista.filter(d=>d.tipo==="receita").reduce((a,b)=>a+b.valor,0);
-const des=lista.filter(d=>d.tipo==="despesa").reduce((a,b)=>a+b.valor,0);
-const saldo=rec-des;
-
-resumoReceita.innerText="R$ "+rec.toFixed(2);
-resumoDespesa.innerText="R$ "+des.toFixed(2);
-saldoTotal.innerText="R$ "+saldo.toFixed(2);
-
-let html="";
-lista.forEach(item=>{
-html+=`
-<div class="card-item">
-<div>${item.nome}</div>
-<div class="${item.tipo==='receita'?'green':'red'}">R$ ${item.valor.toFixed(2)}</div>
-</div>`;
-});
-
-listaPrincipal.innerHTML=html;
-desenharGrafico(lista);
+function filtrar(status, btn) {
+    filtroAtual = status;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    atualizar();
 }
 
-function desenharGrafico(lista){
-const cats=["Fixa","Cartão","Boleto","Outros"];
+function excluir(id) {
+    dados = dados.filter(d => d.id !== id);
+    localStorage.setItem("financeiro_v2", JSON.stringify(dados));
+    atualizar();
+}
 
-const valores=cats.map(c=>
-lista.filter(d=>d.categoria===c && d.tipo==='despesa')
-.reduce((a,b)=>a+b.valor,0)
-);
+function atualizar() {
+    const mes = document.getElementById("selectMes").value;
+    const lista = dados.filter(d => d.mes === mes);
 
-if(chart)chart.destroy();
+    const rec = lista.filter(d => d.tipo === 'receita').reduce((a, b) => a + b.valor, 0);
+    const des = lista.filter(d => d.tipo === 'despesa').reduce((a, b) => a + b.valor, 0);
+    const saldo = rec - des;
 
-chart=new Chart(meuGrafico,{
-type:'doughnut',
-data:{
-labels:cats,
-datasets:[{
-data:valores,
-backgroundColor:['purple','cyan','red','gray']
-}]
-},
-options:{
-plugins:{
-legend:{
-labels:{
-font:{size:12,weight:'bold'}
+    document.getElementById("resumoReceita").innerText = `R$ ${rec.toFixed(2)}`;
+    document.getElementById("resumoDespesa").innerText = `R$ ${des.toFixed(2)}`;
+    const saldoEl = document.getElementById("saldoTotal");
+    saldoEl.innerText = `R$ ${saldo.toFixed(2)}`;
+    saldoEl.className = saldo >= 0 ? "green" : "red";
+
+    const listaFiltro = lista.filter(d => d.tipo === 'receita' || d.status === filtroAtual);
+
+    let html = "";
+    listaFiltro.forEach(item => {
+        html += `
+            <div class="card-item">
+                <div>
+                    <strong>${item.nome}</strong><br>
+                    <small>${item.categoria}</small>
+                </div>
+                <div style="text-align:right">
+                    <span class="${item.tipo === 'receita' ? 'green' : 'red'}">R$ ${item.valor.toFixed(2)}</span><br>
+                    <span onclick="excluir(${item.id})" style="cursor:pointer">🗑️</span>
+                </div>
+            </div>
+        `;
+    });
+
+    document.getElementById("listaPrincipal").innerHTML = html;
+    desenharGrafico(lista);
 }
-}
-}
-}
-});
+
+function desenharGrafico(lista) {
+    const cats = ["Fixa", "Cartão", "Boleto", "Outros"];
+    const valores = cats.map(c => lista.filter(d => d.categoria === c && d.tipo === 'despesa').reduce((a,b) => a + b.valor, 0));
+
+    if (chart) chart.destroy();
+    const ctx = document.getElementById('meuGrafico').getContext('2d');
+
+    chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: cats,
+            datasets: [{
+                data: valores,
+                backgroundColor: ['purple', 'cyan', 'red', 'gray']
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        font: { size: 12, weight: 'bold' },
+                        color: 'black'
+                    }
+                }
+            }
+        }
+    });
 }
 
 atualizar();
