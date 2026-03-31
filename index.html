@@ -2,339 +2,200 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Meu Financeiro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orçamento Doméstico</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Ícone PWA -->
+<link rel="icon" href="https://img.icons8.com/ios-filled/50/000000/money-bag.png">
+<link rel="manifest" href="manifest.json">
 
+<!-- CSS Simples e Moderno -->
 <style>
-/* (mantive seu CSS original intacto) */
+  :root {
+    --primary:#4CAF50;
+    --secondary:#FFC107;
+    --bg:#f5f5f5;
+    --text:#333;
+    --card:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:sans-serif;}
+  body{background:var(--bg);color:var(--text);}
+  header{background:var(--primary);color:#fff;padding:1rem;text-align:center;font-size:1.4rem;}
+  main{padding:1rem;}
+  .resumo{display:flex;justify-content:space-between;margin-bottom:1rem;}
+  .resumo div{background:var(--card);padding:1rem;border-radius:8px;flex:1;text-align:center;margin:0 0.5rem;}
+  #listaPrincipal{margin-bottom:1rem;}
+  .item-card{background:var(--card);padding:0.8rem;margin:0.3rem 0;border-radius:6px;display:flex;justify-content:space-between;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.1);}
+  .fab{position:fixed;right:1rem;bottom:1rem;background:var(--primary);color:#fff;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;cursor:pointer;box-shadow:0 3px 6px rgba(0,0,0,0.2);}
+  .fab-menu{position:fixed;right:1rem;bottom:70px;display:none;flex-direction:column;}
+  .fab-menu.active{display:flex;}
+  .fab-menu button{margin-bottom:0.5rem;background:var(--secondary);border:none;color:#fff;padding:0.7rem 1rem;border-radius:6px;cursor:pointer;}
+  .toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:1rem 1.5rem;border-radius:6px;opacity:0;transition:opacity 0.3s;}
+  .toast.show{opacity:1;}
+  .toast.error{background:#f44336;}
+  #drawer{position:fixed;top:0;right:-100%;width:300px;height:100%;background:#fff;box-shadow:-2px 0 5px rgba(0,0,0,0.3);transition:0.3s;padding:1rem;overflow-y:auto;z-index:100;}
+  #drawer.open{right:0;}
+  #overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);display:none;z-index:99;}
+  #overlay.active{display:block;}
+  .form-group{margin-bottom:1rem;}
+  .form-group input, .form-group select{width:100%;padding:0.5rem;border-radius:5px;border:1px solid #ccc;}
+  #meuGrafico{max-width:100%;margin:1rem 0;}
+  .month-scroll{display:flex;overflow-x:auto;margin-bottom:1rem;}
+  .month-item{padding:0.5rem 1rem;margin-right:0.5rem;background:#fff;border-radius:6px;cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,0.1);}
+  .month-item.active{background:var(--primary);color:#fff;}
 </style>
 </head>
-
 <body>
 
-<div id="toast" class="toast"></div>
-<div class="overlay" id="overlay" onclick="fecharDrawer()"></div>
+<header>Orçamento Doméstico</header>
+<main>
+  <div class="month-scroll" id="monthScroll"></div>
 
-<div class="drawer" id="drawer">
-  <div class="drawer-handle"></div>
-  <div class="drawer-title" id="drawerTitle">Novo</div>
+  <div class="resumo">
+    <div>
+      <h4>Saldo</h4>
+      <div id="saldoTotal">R$ 0,00</div>
+    </div>
+    <div>
+      <h4>Receitas</h4>
+      <div id="resumoReceita">R$ 0,00</div>
+    </div>
+    <div>
+      <h4>Despesas</h4>
+      <div id="resumoDespesa">R$ 0,00</div>
+    </div>
+  </div>
+
+  <canvas id="meuGrafico" height="200"></canvas>
+
+  <div id="listaPrincipal"></div>
+</main>
+
+<!-- Drawer -->
+<div id="drawer">
+  <h3 id="drawerTitle">Adicionar</h3>
   <div id="drawerContent"></div>
 </div>
-
-<!-- HEADER -->
-<div class="header">
-  <div class="header-top">
-    <div class="header-title">💰 Meu Financeiro</div>
-    <!-- REMOVIDO BOTÃO CARTÕES -->
-  </div>
-
-  <div class="month-wrap">
-    <div class="month-scroll" id="monthScroll"></div>
-  </div>
-</div>
-
-<!-- RESTO NORMAL -->
-<div style="max-width:520px;margin:auto;">
-  <div class="balance-card">
-    <div class="balance-label">Saldo</div>
-    <div class="balance-value" id="saldoTotal">R$ 0,00</div>
-
-    <div class="balance-grid">
-      <div class="bal-item">
-        <div class="bal-item-label">▲ Receitas</div>
-        <div class="bal-item-value green" id="resumoReceita">R$ 0,00</div>
-      </div>
-      <div class="bal-item">
-        <div class="bal-item-label">▼ Despesas</div>
-        <div class="bal-item-value red" id="resumoDespesa">R$ 0,00</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="terceiros-strip hidden" id="terceirosStrip">
-    <div class="terceiros-label">⚠️ Despesas de terceiros</div>
-    <div class="terceiros-value" id="terceirosValue">R$ 0,00</div>
-  </div>
-</div>
-
-<div class="container">
-
-  <div id="abaLancamentos">
-    <div class="chart-box">
-      <div class="section-title">Despesas por Categoria</div>
-      <canvas id="meuGrafico"></canvas>
-    </div>
-
-    <div class="filter-bar">
-      <button class="filter-btn active" onclick="filtrar('pendente',this)">⏳</button>
-      <button class="filter-btn" onclick="filtrar('agendado',this)">📅</button>
-      <button class="filter-btn" onclick="filtrar('pago',this)">✅</button>
-      <button class="filter-btn" onclick="filtrar('receitas',this)">💚</button>
-    </div>
-
-    <div id="listaPrincipal"></div>
-  </div>
-
-</div>
+<div id="overlay" onclick="fecharDrawer()"></div>
 
 <!-- FAB -->
-<div class="fab-wrap">
-  <div class="fab-menu" id="fabMenu">
-    <button class="fab-option receita" onclick="abrirDrawer('receita')">💚 Receita</button>
-    <button class="fab-option despesa" onclick="abrirDrawer('despesa')">🔴 Despesa</button>
-    <button class="fab-option categoria" onclick="novaCategoria()">📁 Categoria</button>
-    <button class="fab-option cartao" onclick="abrirDrawer('cartao')">🃏 Cartão</button>
-  </div>
-  <button class="fab" id="fabBtn" onclick="toggleFab()">+</button>
+<div class="fab" onclick="toggleFab()">+</div>
+<div class="fab-menu" id="fabMenu">
+  <button onclick="abrirDrawer('despesa')">Nova Despesa</button>
+  <button onclick="abrirDrawer('receita')">Nova Receita</button>
 </div>
 
+<div id="toast" class="toast"></div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
-
-// ================= DADOS =================
-let dados = JSON.parse(localStorage.getItem('fin_dados')) || [];
-let cartoes = JSON.parse(localStorage.getItem('fin_cartoes')) || [];
-let categoriasCustom = JSON.parse(localStorage.getItem('fin_categorias')) || [];
-
-let filtroAtual = 'pendente';
+/* ================= DADOS ================= */
+let dados = JSON.parse(localStorage.getItem('dados')) || [];
+let categoriasCustom = JSON.parse(localStorage.getItem('categoriasCustom')) || [];
+let chart = null;
 let filtroCategoria = null;
-let mesSelecionado = '';
-let chart;
+let filtroAtual = 'pendente';
 let editandoId = null;
-let cardExpandido = null;
+let MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+let mesSelecionado = MESES[new Date().getMonth()];
 
-// ================= MESES =================
-const MESES = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
-
-// ================= INIT =================
-function init() {
-  const hoje = new Date();
-  mesSelecionado = MESES[hoje.getMonth()];
-  renderMonths();
-  atualizar();
-}
-
-// ================= SALVAR =================
+/* ================= FUNCOES ================= */
 function salvar() {
-  localStorage.setItem('fin_dados', JSON.stringify(dados));
-  localStorage.setItem('fin_cartoes', JSON.stringify(cartoes));
-  localStorage.setItem('fin_categorias', JSON.stringify(categoriasCustom));
+  localStorage.setItem('dados', JSON.stringify(dados));
+  localStorage.setItem('categoriasCustom', JSON.stringify(categoriasCustom));
 }
 
-// ================= NOVA CATEGORIA =================
-function novaCategoria() {
-  const nome = prompt('Nome da categoria:');
-  if (!nome) return;
-
-  if (categoriasCustom.includes(nome)) {
-    toast('Já existe!', 'error');
-    return;
-  }
-
-  categoriasCustom.push(nome);
-  salvar();
-  toast('Categoria criada!', 'success');
-}
-
-// ================= TOGGLE CARD =================
-function toggleCard(id) {
-  cardExpandido = cardExpandido === id ? null : id;
-  atualizar();
-}
-
-/* ================= FORMULARIO ================= */
-function abrirDrawer(tipo, item=null) {
-  editandoId = item ? item.id : null;
-  const drawerTitle = document.getElementById('drawerTitle');
-  const drawerContent = document.getElementById('drawerContent');
-
-  let html = '';
-  if(tipo==='despesa' || tipo==='receita') {
-    html += `<div class="form-group">
-               <label>Descrição</label>
-               <input type="text" id="inputDesc" value="${item?item.desc:''}" placeholder="Ex: Mercado">
-             </div>
-             <div class="form-group">
-               <label>Valor</label>
-               <input type="number" id="inputValor" value="${item?item.valor:''}" placeholder="Ex: 50">
-             </div>
-             <div class="form-group">
-               <label>Categoria</label>
-               <select id="inputCategoria">
-                 <option value="">Selecione</option>`;
-    // categorias fixas
-    ['Cartão','Boleto','Fixa','Outros'].forEach(c=>{
-      let selected = item && item.categoria===c ? 'selected' : '';
-      html += `<option value="${c}" ${selected}>${c}</option>`;
-    });
-    // categorias custom
-    categoriasCustom.forEach(c=>{
-      let selected = item && item.categoria===c ? 'selected' : '';
-      html += `<option value="${c}" ${selected}>${c}</option>`;
-    });
-
-    html += `</select>
-             </div>
-             <div class="form-group">
-               <label>Data</label>
-               <input type="date" id="inputData" value="${item?item.data:''}">
-             </div>
-             <button class="btn btn-primary" onclick="formDespesa('${tipo}')">Salvar</button>`;
-  }
-
-  drawerContent.innerHTML = html;
-  document.getElementById('drawer').classList.add('open');
-  document.getElementById('overlay').classList.add('active');
-}
-
-function fecharDrawer() {
-  document.getElementById('drawer').classList.remove('open');
-  document.getElementById('overlay').classList.remove('active');
-}
-
-// ================= FORM DESPESA =================
-function formDespesa(tipo) {
-  const desc = document.getElementById('inputDesc').value.trim();
-  const valor = parseFloat(document.getElementById('inputValor').value);
-  const categoria = document.getElementById('inputCategoria').value;
-  const data = document.getElementById('inputData').value;
-
-  if(!desc || !valor || !categoria || !data) {
-    toast('Preencha todos os campos!', 'error');
-    return;
-  }
-
-  if(editandoId) {
-    let idx = dados.findIndex(d=>d.id===editandoId);
-    if(idx>-1) {
-      dados[idx] = {id: editandoId, tipo, desc, valor, categoria, data};
-      toast('Atualizado!', 'success');
-    }
-  } else {
-    dados.push({
-      id: Date.now(),
-      tipo,
-      desc,
-      valor,
-      categoria,
-      data
-    });
-    toast('Adicionado!', 'success');
-  }
-
-  salvar();
-  fecharDrawer();
-  atualizar();
-}
-
-// ================= TOAST =================
-function toast(msg, tipo='success') {
+function toast(msg,tipo='success'){
   const t = document.getElementById('toast');
   t.innerText = msg;
   t.className = `toast ${tipo} show`;
   setTimeout(()=>{ t.className='toast'; },2500);
 }
 
-// ================= FILTRO =================
-function filtrar(status, btn=null) {
-  filtroAtual = status;
-  if(btn) {
-    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-  atualizar();
+function abrirDrawer(tipo,item=null){
+  editandoId = item?item.id:null;
+  const drawerContent = document.getElementById('drawerContent');
+  let html = `<div class="form-group"><label>Descrição</label><input type="text" id="inputDesc" value="${item?item.desc:''}"></div>
+              <div class="form-group"><label>Valor</label><input type="number" id="inputValor" value="${item?item.valor:''}"></div>
+              <div class="form-group"><label>Categoria</label><select id="inputCategoria"><option value="">Selecione</option>`;
+  ['Cartão','Boleto','Fixa','Outros'].concat(categoriasCustom).forEach(c=>{
+    let selected = item && item.categoria===c?'selected':'';
+    html+=`<option value="${c}" ${selected}>${c}</option>`;
+  });
+  html += `</select></div>
+           <div class="form-group"><label>Data</label><input type="date" id="inputData" value="${item?item.data:''}"></div>
+           <button class="btn btn-primary" onclick="formDespesa('${tipo}')">Salvar</button>`;
+  drawerContent.innerHTML = html;
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('overlay').classList.add('active');
 }
 
-// ================= MESES =================
-function renderMonths() {
-  const container = document.getElementById('monthScroll');
-  container.innerHTML = '';
+function fecharDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('overlay').classList.remove('active');}
+
+function formDespesa(tipo){
+  const desc=document.getElementById('inputDesc').value.trim();
+  const valor=parseFloat(document.getElementById('inputValor').value);
+  const categoria=document.getElementById('inputCategoria').value;
+  const data=document.getElementById('inputData').value;
+  if(!desc||!valor||!categoria||!data){toast('Preencha todos os campos!','error');return;}
+  if(editandoId){
+    let idx=dados.findIndex(d=>d.id===editandoId);
+    dados[idx]={id:editandoId,tipo,desc,valor,categoria,data};
+    toast('Atualizado!');
+  } else {
+    dados.push({id:Date.now(),tipo,desc,valor,categoria,data});
+    toast('Adicionado!');
+  }
+  salvar();fecharDrawer();atualizar();
+}
+
+function toggleFab(){document.getElementById('fabMenu').classList.toggle('active');}
+
+function renderMonths(){
+  const container=document.getElementById('monthScroll');
+  container.innerHTML='';
   MESES.forEach(m=>{
-    let active = m===mesSelecionado ? 'active' : '';
-    container.innerHTML += `<div class="month-item ${active}" onclick="selecionarMes('${m}')">${m}</div>`;
+    let active=m===mesSelecionado?'active':'';
+    container.innerHTML+=`<div class="month-item ${active}" onclick="selecionarMes('${m}')">${m}</div>`;
   });
 }
 
-function selecionarMes(m) {
-  mesSelecionado = m;
-  renderMonths();
-  atualizar();
-}
+function selecionarMes(m){mesSelecionado=m;renderMonths();atualizar();}
 
-// ================= ATUALIZAR =================
-function atualizar() {
-  const lista = document.getElementById('listaPrincipal');
-  const mes = mesSelecionado;
-  lista.innerHTML = '';
-
+function atualizar(){
+  const lista=document.getElementById('listaPrincipal');
+  lista.innerHTML='';
   let saldo=0, receita=0, despesa=0;
-  let categoriasResumo = {};
-
+  let categoriasResumo={};
   dados.forEach(d=>{
     const dataMes = new Date(d.data).getMonth();
-    if(MESES[dataMes]!==mes) return;
-
+    if(MESES[dataMes]!==mesSelecionado) return;
     if(d.tipo==='receita') receita+=d.valor;
     else despesa+=d.valor;
-
-    // resumo categorias
-    if(d.tipo!=='receita') {
-      categoriasResumo[d.categoria] = (categoriasResumo[d.categoria]||0)+d.valor;
-    }
-
-    // filtro status
-    if(filtroAtual==='pendente' && d.tipo==='despesa' || filtroAtual==='receitas' && d.tipo==='receita') {
-      lista.innerHTML += `<div class="item-card" onclick="toggleCard(${d.id})">
-                            <div>${d.desc} - ${d.categoria}</div>
-                            <div>R$ ${d.valor.toFixed(2)}</div>
-                          </div>`;
+    if(d.tipo!=='receita') categoriasResumo[d.categoria]=(categoriasResumo[d.categoria]||0)+d.valor;
+    if(!filtroCategoria || d.categoria===filtroCategoria){
+      lista.innerHTML+=`<div class="item-card" onclick="abrirDrawer('${d.tipo}',${JSON.stringify(d)})"><div>${d.desc} - ${d.categoria}</div><div>R$ ${d.valor.toFixed(2)}</div></div>`;
     }
   });
-
-  document.getElementById('saldoTotal').innerText = `R$ ${(receita-despesa).toFixed(2)}`;
-  document.getElementById('resumoReceita').innerText = `R$ ${receita.toFixed(2)}`;
-  document.getElementById('resumoDespesa').innerText = `R$ ${despesa.toFixed(2)}`;
-
-  // atualizar gráfico
+  document.getElementById('saldoTotal').innerText=`R$ ${(receita-despesa).toFixed(2)}`;
+  document.getElementById('resumoReceita').innerText=`R$ ${receita.toFixed(2)}`;
+  document.getElementById('resumoDespesa').innerText=`R$ ${despesa.toFixed(2)}`;
   atualizarGrafico(categoriasResumo);
 }
 
-// ================= GRAFICO =================
-function atualizarGrafico(resumo) {
-  const ctx = document.getElementById('meuGrafico').getContext('2d');
-  const labels = Object.keys(resumo);
-  const data = Object.values(resumo);
-
+function atualizarGrafico(resumo){
+  const ctx=document.getElementById('meuGrafico').getContext('2d');
+  const labels=Object.keys(resumo);
+  const data=Object.values(resumo);
   if(chart) chart.destroy();
-  chart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels,
-      datasets:[{data, backgroundColor: labels.map(()=>`hsl(${Math.random()*360},70%,60%)`)}]
-    },
-    options: {
-      onClick: (e, elements)=>{
-        if(elements.length>0) {
-          const idx = elements[0].index;
-          filtroCategoria = labels[idx];
-          atualizar();
-        }
-      },
-      plugins: { legend: { position:'bottom' } }
-    }
-  });
+  chart=new Chart(ctx,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:labels.map(()=>`hsl(${Math.random()*360},70%,60%)`)}]},options:{onClick:(e,els)=>{if(els.length>0){filtroCategoria=labels[els[0].index];atualizar();}},plugins:{legend:{position:'bottom'}}}});
 }
 
-// ================= FAB =================
-function toggleFab() {
-  document.getElementById('fabMenu').classList.toggle('active');
-}
-
-// ================= INICIAR =================
-init();
-
+/* ================= INIT ================= */
+renderMonths();
+atualizar();
 </script>
 </body>
 </html>
