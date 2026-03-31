@@ -1,206 +1,813 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Financeiro Pro</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --primary: #7c4dff;
-            --bg: #f5f7fb;
-            --card: #ffffff;
-            --text: #333;
-            --green: #00c853;
-            --red: #ff5252;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Meu Financeiro</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --primary: #6c63ff;
+  --primary-dark: #574fd6;
+  --green: #10b981;
+  --green-light: #d1fae5;
+  --red: #ef4444;
+  --red-light: #fee2e2;
+  --yellow: #f59e0b;
+  --yellow-light: #fef3c7;
+  --blue: #3b82f6;
+  --blue-light: #dbeafe;
+  --bg: #f0f2ff;
+  --card: #ffffff;
+  --text: #1e1b4b;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 100px; }
 
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
-        .header { text-align: center; padding: 20px; background: var(--card); border-radius: 0 0 20px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .container { padding: 15px; max-width: 500px; margin: auto; }
+/* TOAST */
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px); background: #1e1b4b; color: white; padding: 12px 24px; border-radius: 30px; font-size: 14px; font-weight: 600; z-index: 9999; transition: transform 0.35s cubic-bezier(.34,1.56,.64,1); white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.success { background: var(--green); }
+.toast.error { background: var(--red); }
+.toast.info { background: var(--primary); }
 
-        /* Saldo Central */
-        .balance-box { text-align: center; margin: 40px 0; }
-        .balance-box h2 { font-size: 28px; margin: 5px 0; }
-        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .sum-card { background: var(--card); padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+/* HEADER */
+.header { background: linear-gradient(135deg, #6c63ff 0%, #a855f7 100%); padding: 24px 20px 80px; position: relative; overflow: hidden; }
+.header::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; border-radius:50%; background:rgba(255,255,255,0.08); }
+.header::after { content:''; position:absolute; bottom:-20px; left:30%; width:100px; height:100px; border-radius:50%; background:rgba(255,255,255,0.05); }
+.header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; position:relative; z-index:1; }
+.header-title { font-size:20px; font-weight:800; color:white; letter-spacing:-0.3px; }
+.btn-cards-header { background:rgba(255,255,255,0.2); border:none; color:white; padding:8px 14px; border-radius:20px; font-family:'Nunito',sans-serif; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; }
 
-        /* Gráfico */
-        .chart-container { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 20px; }
-        canvas { max-height: 200px; }
+/* MONTH SCROLLER */
+.month-wrap { position:relative; z-index:1; }
+.month-scroll { display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; padding:2px 4px; }
+.month-scroll::-webkit-scrollbar { display:none; }
+.month-btn { flex:0 0 auto; padding:8px 16px; border-radius:20px; border:2px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); font-family:'Nunito',sans-serif; font-size:12px; font-weight:700; cursor:pointer; transition:all .2s; letter-spacing:.05em; }
+.month-btn.active { background:white; border-color:white; color:var(--primary); }
 
-        /* Filtros de Status */
-        .filter-bar { display: flex; justify-content: space-around; margin-bottom: 15px; }
-        .filter-btn { background: #eee; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 12px; }
-        .filter-btn.active { background: var(--primary); color: white; }
+/* BALANCE CARD */
+.balance-card { background:white; border-radius:var(--radius); margin: -50px 16px 16px; padding:20px; box-shadow:0 8px 30px rgba(108,99,255,0.15); position:relative; z-index:2; }
+.balance-label { font-size:12px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.06em; }
+.balance-value { font-size:32px; font-weight:800; margin:4px 0 16px; letter-spacing:-1px; }
+.balance-value.pos { color:var(--green); }
+.balance-value.neg { color:var(--red); }
+.balance-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.bal-item { background:var(--bg); border-radius:var(--radius-sm); padding:12px; }
+.bal-item-label { font-size:11px; color:var(--muted); font-weight:600; display:flex; align-items:center; gap:4px; margin-bottom:4px; }
+.bal-item-value { font-size:18px; font-weight:800; }
+.bal-item-value.green { color:var(--green); }
+.bal-item-value.red { color:var(--red); }
 
-        /* Lista de Itens */
-        .card-item { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        
-        /* Botão Flutuante de Adicionar */
-        .fab { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 15px rgba(124, 77, 255, 0.4); cursor: pointer; border: none; }
+/* TERCEIROS */
+.terceiros-strip { margin:0 16px 16px; background:#fff7ed; border:1.5px solid #fed7aa; border-radius:var(--radius-sm); padding:12px 16px; display:flex; justify-content:space-between; align-items:center; }
+.terceiros-strip.hidden { display:none; }
+.terceiros-label { font-size:12px; color:#92400e; font-weight:700; }
+.terceiros-value { font-size:16px; font-weight:800; color:#c2410c; }
 
-        .hidden { display: none; }
-        .green { color: var(--green); }
-        .red { color: var(--red); }
-    </style>
+/* CONTAINER */
+.container { padding:0 16px; max-width:520px; margin:auto; }
+
+/* GRÁFICO */
+.chart-box { background:white; border-radius:var(--radius); padding:20px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04); }
+.section-title { font-size:14px; font-weight:800; color:var(--text); margin-bottom:14px; text-transform:uppercase; letter-spacing:.05em; }
+canvas { max-height:180px; }
+
+/* FILTER BAR */
+.filter-bar { display:flex; gap:8px; margin-bottom:14px; overflow-x:auto; scrollbar-width:none; padding:2px; }
+.filter-bar::-webkit-scrollbar { display:none; }
+.filter-btn { flex:0 0 auto; padding:9px 18px; border-radius:20px; border:2px solid var(--border); background:white; color:var(--muted); font-family:'Nunito',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:all .2s; }
+.filter-btn.active { border-color:var(--primary); background:var(--primary); color:white; }
+
+/* LISTA */
+.list-empty { text-align:center; padding:32px; color:var(--muted); font-size:14px; font-weight:600; }
+.item-card { background:white; border-radius:var(--radius-sm); margin-bottom:10px; padding:14px 16px; display:flex; align-items:center; gap:12px; box-shadow:0 2px 6px rgba(0,0,0,0.04); border-left:4px solid transparent; transition:transform .15s; }
+.item-card:active { transform:scale(0.98); }
+.item-card.receita { border-left-color:var(--green); }
+.item-card.despesa { border-left-color:var(--red); }
+.item-card.terceiro { border-left-color:var(--yellow); opacity:.85; }
+.item-icon { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.item-icon.green { background:var(--green-light); }
+.item-icon.red { background:var(--red-light); }
+.item-icon.yellow { background:var(--yellow-light); }
+.item-info { flex:1; min-width:0; }
+.item-name { font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.item-sub { font-size:12px; color:var(--muted); font-weight:600; margin-top:2px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; letter-spacing:.04em; }
+.badge.pendente { background:var(--yellow-light); color:#92400e; }
+.badge.agendado { background:var(--blue-light); color:#1e40af; }
+.badge.pago, .badge.recebida { background:var(--green-light); color:#065f46; }
+.badge.terceiro { background:var(--yellow-light); color:#92400e; }
+.item-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+.item-value { font-size:16px; font-weight:800; }
+.item-value.green { color:var(--green); }
+.item-value.red { color:var(--red); }
+.item-value.yellow { color:var(--yellow); }
+.item-actions { display:flex; gap:6px; }
+.action-btn { width:28px; height:28px; border-radius:8px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; transition:opacity .15s; }
+.action-btn:hover { opacity:.75; }
+.btn-pago { background:var(--green-light); }
+.btn-agendado { background:var(--blue-light); }
+.btn-pendente { background:var(--yellow-light); }
+.btn-edit { background:#f3f4f6; }
+.btn-del { background:var(--red-light); }
+
+/* SEÇÃO CARTÕES */
+.cartoes-section { margin-bottom:16px; }
+.cartao-card { background:white; border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:10px; display:flex; align-items:center; gap:12px; box-shadow:0 2px 6px rgba(0,0,0,0.04); }
+.cartao-chip { width:40px; height:28px; border-radius:6px; flex-shrink:0; }
+.cartao-info { flex:1; }
+.cartao-name { font-size:14px; font-weight:700; }
+.cartao-sub { font-size:12px; color:var(--muted); font-weight:600; margin-top:2px; }
+.cartao-actions { display:flex; gap:6px; }
+
+/* FAB */
+.fab-wrap { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:100; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.fab-menu { display:flex; flex-direction:column; gap:8px; align-items:center; }
+.fab-option { background:white; border:none; border-radius:20px; padding:10px 20px; font-family:'Nunito',sans-serif; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,0.12); display:flex; align-items:center; gap:8px; transition:transform .15s; white-space:nowrap; }
+.fab-option:hover { transform:scale(1.04); }
+.fab-option.receita { color:var(--green); }
+.fab-option.despesa { color:var(--red); }
+.fab-option.cartao { color:var(--primary); }
+.fab-option.categoria { color:var(--yellow); }
+.fab { width:58px; height:58px; border-radius:50%; border:none; background:linear-gradient(135deg,#6c63ff,#a855f7); color:white; font-size:26px; cursor:pointer; box-shadow:0 6px 20px rgba(108,99,255,0.45); transition:transform .2s; display:flex; align-items:center; justify-content:center; }
+.fab.open { transform:rotate(45deg); }
+.fab-menu { display:none; }
+.fab-menu.open { display:flex; }
+
+/* MODAL / DRAWER */
+.overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; display:none; }
+.overlay.open { display:block; }
+.drawer { position:fixed; bottom:0; left:0; right:0; max-width:520px; margin:auto; background:white; border-radius:24px 24px 0 0; padding:24px 20px 40px; z-index:201; transform:translateY(100%); transition:transform .35s cubic-bezier(.4,0,.2,1); max-height:92vh; overflow-y:auto; }
+.drawer.open { transform:translateY(0); }
+.drawer-handle { width:40px; height:4px; background:var(--border); border-radius:4px; margin:0 auto 20px; }
+.drawer-title { font-size:18px; font-weight:800; margin-bottom:20px; color:var(--text); }
+
+/* FORM */
+.form-group { margin-bottom:16px; }
+.form-label { display:block; font-size:13px; font-weight:700; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em; }
+.form-control { width:100%; padding:14px 16px; border:2px solid var(--border); border-radius:var(--radius-sm); font-family:'Nunito',sans-serif; font-size:15px; font-weight:600; color:var(--text); background:white; outline:none; transition:border-color .2s; appearance:none; -webkit-appearance:none; }
+.form-control:focus { border-color:var(--primary); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.toggle-group { display:flex; gap:8px; }
+.toggle-btn { flex:1; padding:12px; border-radius:var(--radius-sm); border:2px solid var(--border); background:white; font-family:'Nunito',sans-serif; font-size:14px; font-weight:700; cursor:pointer; transition:all .2s; text-align:center; }
+.toggle-btn.active.green { border-color:var(--green); background:var(--green-light); color:#065f46; }
+.toggle-btn.active.red { border-color:var(--red); background:var(--red-light); color:#991b1b; }
+.toggle-btn.active.blue { border-color:var(--blue); background:var(--blue-light); color:#1e40af; }
+.toggle-btn.active.yellow { border-color:var(--yellow); background:var(--yellow-light); color:#92400e; }
+.btn-save { width:100%; padding:16px; border-radius:var(--radius-sm); border:none; background:linear-gradient(135deg,#6c63ff,#a855f7); color:white; font-family:'Nunito',sans-serif; font-size:16px; font-weight:800; cursor:pointer; margin-top:8px; transition:opacity .2s; }
+.btn-save:hover { opacity:.9; }
+.btn-cancel { width:100%; padding:13px; border-radius:var(--radius-sm); border:2px solid var(--border); background:white; color:var(--muted); font-family:'Nunito',sans-serif; font-size:15px; font-weight:700; cursor:pointer; margin-top:8px; }
+.cartao-color-pick { display:flex; gap:8px; flex-wrap:wrap; }
+.color-dot { width:32px; height:32px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:all .15s; }
+.color-dot.selected { border-color:var(--text); transform:scale(1.15); }
+.hidden { display:none; }
+.parcela-info { background:var(--blue-light); border-radius:var(--radius-sm); padding:10px 14px; font-size:13px; color:#1e40af; font-weight:600; margin-top:8px; }
+</style>
 </head>
 <body>
 
-<div class="header">
-    <select id="selectMes" onchange="atualizar()">
-        <option value="Janeiro">Janeiro</option>
-        <option value="Fevereiro">Fevereiro</option>
-        </select>
-    <div class="balance-box">
-        <small>Saldo em conta</small>
-        <h2 id="saldoTotal">R$ 0,00</h2>
-    </div>
+<div id="toast" class="toast"></div>
+<div class="overlay" id="overlay" onclick="fecharDrawer()"></div>
+
+<!-- DRAWER ÚNICO -->
+<div class="drawer" id="drawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-title" id="drawerTitle">Novo Lançamento</div>
+  <div id="drawerContent"></div>
 </div>
 
-<div class="container">
-    <div class="summary-grid">
-        <div class="sum-card">
-            <small class="green">▲ Receitas</small>
-            <div id="resumoReceita" class="green">R$ 0,00</div>
-        </div>
-        <div class="sum-card">
-            <small class="red">▼ Despesas</small>
-            <div id="resumoDespesa" class="red">R$ 0,00</div>
-        </div>
-    </div>
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="header-title">💰 Meu Financeiro</div>
+    <button class="btn-cards-header" onclick="mostrarAba('cartoes')">🃏 Cartões</button>
+  </div>
+  <div class="month-wrap">
+    <div class="month-scroll" id="monthScroll"></div>
+  </div>
+</div>
 
-    <div class="chart-container">
-        <canvas id="meuGrafico"></canvas>
+<!-- BALANCE CARD -->
+<div style="max-width:520px;margin:auto;">
+  <div class="balance-card">
+    <div class="balance-label">Saldo</div>
+    <div class="balance-value" id="saldoTotal">R$ 0,00</div>
+    <div class="balance-grid">
+      <div class="bal-item">
+        <div class="bal-item-label">▲ Receitas</div>
+        <div class="bal-item-value green" id="resumoReceita">R$ 0,00</div>
+      </div>
+      <div class="bal-item">
+        <div class="bal-item-label">▼ Despesas</div>
+        <div class="bal-item-value red" id="resumoDespesa">R$ 0,00</div>
+      </div>
+    </div>
+  </div>
+  <div class="terceiros-strip hidden" id="terceirosStrip">
+    <div class="terceiros-label">⚠️ Despesas de terceiros (não somam)</div>
+    <div class="terceiros-value" id="terceirosValue">R$ 0,00</div>
+  </div>
+</div>
+
+<!-- ABAS DE CONTEÚDO -->
+<div class="container">
+
+  <!-- ABA PRINCIPAL -->
+  <div id="abaLancamentos">
+    <div class="chart-box">
+      <div class="section-title">Despesas por Categoria</div>
+      <canvas id="meuGrafico"></canvas>
     </div>
 
     <div class="filter-bar">
-        <button class="filter-btn active" onclick="filtrar('pendente', this)">PENDENTES</button>
-        <button class="filter-btn" onclick="filtrar('agendado', this)">AGENDADO</button>
-        <button class="filter-btn" onclick="filtrar('pago', this)">PAGOS</button>
+      <button class="filter-btn active" onclick="filtrar('pendente',this)">⏳ Pendentes</button>
+      <button class="filter-btn" onclick="filtrar('agendado',this)">📅 Agendadas</button>
+      <button class="filter-btn" onclick="filtrar('pago',this)">✅ Pagas</button>
+      <button class="filter-btn" onclick="filtrar('receitas',this)">💚 Receitas</button>
     </div>
 
-    <div id="listaPrincipal">
-        </div>
+    <div id="listaPrincipal"></div>
+  </div>
+
+  <!-- ABA CARTÕES -->
+  <div id="abaCartoes" class="hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="section-title" style="margin:0;">Meus Cartões</div>
+      <button onclick="abrirDrawer('cartao')" style="background:var(--primary);color:white;border:none;border-radius:20px;padding:8px 16px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">+ Novo</button>
+    </div>
+    <div id="listaCartoes"></div>
+    <button onclick="mostrarAba('lancamentos')" class="btn-cancel" style="margin-top:8px;">← Voltar</button>
+  </div>
+
 </div>
 
-<div id="formContainer" class="container hidden" style="background: white; position: fixed; top: 0; height: 100%; z-index: 10;">
-    <h3>Novo Lançamento</h3>
-    <input type="text" id="nome" placeholder="Descrição">
-    <input type="number" id="valor" placeholder="Valor">
-    <select id="tipo">
-        <option value="despesa">Despesa</option>
-        <option value="receita">Receita</option>
-    </select>
-    <select id="cat">
-        <option value="Fixa">Fixa</option>
-        <option value="Cartão">Cartão</option>
-        <option value="Boleto">Boleto</option>
-        <option value="Outros">Outros</option>
-    </select>
-    <select id="status">
-        <option value="pendente">Pendente</option>
-        <option value="agendado">Agendado</option>
-        <option value="pago">Pago</option>
-    </select>
-    <button onclick="salvarNovo()" style="width:100%; padding:15px; background:var(--green); border:none; color:white; margin-top:10px;">SALVAR</button>
-    <button onclick="fecharForm()" style="width:100%; padding:10px; background:#ccc; border:none; margin-top:5px;">CANCELAR</button>
+<!-- FAB -->
+<div class="fab-wrap">
+  <div class="fab-menu" id="fabMenu">
+    <button class="fab-option receita" onclick="abrirDrawer('receita')">💚 Nova Receita</button>
+    <button class="fab-option despesa" onclick="abrirDrawer('despesa')">🔴 Nova Despesa</button>
+    <button class="fab-option cartao" onclick="abrirDrawer('cartao')">🃏 Novo Cartão</button>
+  </div>
+  <button class="fab" id="fabBtn" onclick="toggleFab()">+</button>
 </div>
-
-<button class="fab" onclick="abrirForm()">+</button>
 
 <script>
-let dados = JSON.parse(localStorage.getItem("financeiro_v2")) || [];
+// ========== DADOS ==========
+let dados = JSON.parse(localStorage.getItem('fin_dados')) || [];
+let cartoes = JSON.parse(localStorage.getItem('fin_cartoes')) || [];
 let filtroAtual = 'pendente';
+let mesSelecionado = '';
 let chart;
+let editandoId = null;
 
-function abrirForm() { document.getElementById("formContainer").classList.remove("hidden"); }
-function fecharForm() { document.getElementById("formContainer").classList.add("hidden"); }
+const MESES = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const CORES_CARTAO = ['#6c63ff','#ef4444','#10b981','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#14b8a6'];
 
-function salvarNovo() {
-    const item = {
-        id: Date.now(),
-        nome: document.getElementById("nome").value,
-        valor: parseFloat(document.getElementById("valor").value),
-        tipo: document.getElementById("tipo").value,
-        categoria: document.getElementById("cat").value,
-        status: document.getElementById("status").value,
-        mes: document.getElementById("selectMes").value
-    };
-    dados.push(item);
-    localStorage.setItem("financeiro_v2", JSON.stringify(dados));
-    fecharForm();
-    atualizar();
+// ========== INIT ==========
+function init() {
+  const hoje = new Date();
+  mesSelecionado = MESES[hoje.getMonth()];
+  renderMonths();
+  atualizar();
 }
 
-function filtrar(status, btn) {
-    filtroAtual = status;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    atualizar();
+function salvar() {
+  localStorage.setItem('fin_dados', JSON.stringify(dados));
+  localStorage.setItem('fin_cartoes', JSON.stringify(cartoes));
 }
 
+// ========== TOAST ==========
+function toast(msg, tipo='info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast ${tipo} show`;
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ========== MESES ==========
+function renderMonths() {
+  const wrap = document.getElementById('monthScroll');
+  wrap.innerHTML = '';
+  MESES.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'month-btn' + (m === mesSelecionado ? ' active' : '');
+    btn.textContent = m;
+    btn.onclick = () => { mesSelecionado = m; renderMonths(); atualizar(); };
+    wrap.appendChild(btn);
+  });
+  const activeBtn = wrap.querySelector('.active');
+  if (activeBtn) setTimeout(() => activeBtn.scrollIntoView({inline:'center', behavior:'smooth'}), 100);
+}
+
+// ========== ABAS ==========
+function mostrarAba(aba) {
+  document.getElementById('abaLancamentos').classList.toggle('hidden', aba !== 'lancamentos');
+  document.getElementById('abaCartoes').classList.toggle('hidden', aba !== 'cartoes');
+  if (aba === 'cartoes') renderCartoes();
+}
+
+// ========== FAB ==========
+function toggleFab() {
+  const menu = document.getElementById('fabMenu');
+  const btn = document.getElementById('fabBtn');
+  menu.classList.toggle('open');
+  btn.classList.toggle('open');
+}
+function closeFab() {
+  document.getElementById('fabMenu').classList.remove('open');
+  document.getElementById('fabBtn').classList.remove('open');
+}
+
+// ========== DRAWER ==========
+function abrirDrawer(tipo, id=null) {
+  closeFab();
+  editandoId = id;
+  const drawer = document.getElementById('drawer');
+  const overlay = document.getElementById('overlay');
+  document.getElementById('drawerTitle').textContent = id ? 'Editar' : (tipo === 'receita' ? '💚 Nova Receita' : tipo === 'despesa' ? '🔴 Nova Despesa' : '🃏 Cartão');
+  document.getElementById('drawerContent').innerHTML = tipo === 'receita' ? formReceita(id) : tipo === 'despesa' ? formDespesa(id) : formCartao(id);
+  drawer.classList.add('open');
+  overlay.classList.add('open');
+  if (tipo === 'despesa') { atualizarCamposCartao(); calcularParcelas(); }
+}
+
+function fecharDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  editandoId = null;
+}
+
+// ========== FORM RECEITA ==========
+function formReceita(id) {
+  const d = id ? dados.find(x=>x.id===id) : null;
+  return `
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <input class="form-control" id="fNome" placeholder="Ex: Salário, Freelance..." value="${d?d.nome:''}">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input class="form-control" id="fValor" type="number" step="0.01" placeholder="0,00" value="${d?d.valor:''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input class="form-control" id="fData" type="date" value="${d?d.data:''}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <div class="toggle-group">
+        <button class="toggle-btn ${!d||d.status==='pendente'?'active green':''}" onclick="setToggle(this,'fStatus','pendente','green')">⏳ Pendente</button>
+        <button class="toggle-btn ${d&&d.status==='recebida'?'active green':''}" onclick="setToggle(this,'fStatus','recebida','green')">✅ Recebida</button>
+      </div>
+      <input type="hidden" id="fStatus" value="${d?d.status:'pendente'}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Repetir nos 12 meses?</label>
+      <div class="toggle-group">
+        <button class="toggle-btn ${!d?'active green':''}" onclick="setToggle(this,'fFixa','nao','green')">Não</button>
+        <button class="toggle-btn ${d&&d.fixa?'active green':''}" onclick="setToggle(this,'fFixa','sim','green')">Sim (fixa)</button>
+      </div>
+      <input type="hidden" id="fFixa" value="${d&&d.fixa?'sim':'nao'}">
+    </div>
+    <button class="btn-save" onclick="salvarReceita()">SALVAR RECEITA</button>
+    <button class="btn-cancel" onclick="fecharDrawer()">Cancelar</button>
+  `;
+}
+
+// ========== FORM DESPESA ==========
+function formDespesa(id) {
+  const d = id ? dados.find(x=>x.id===id) : null;
+  const cats = ['Fixa','Cartão','Boleto','Alimentação','Saúde','Transporte','Educação','Lazer','Casa','Outros'];
+  const catOpts = cats.map(c=>`<option value="${c}" ${d&&d.categoria===c?'selected':''}>${c}</option>`).join('');
+  const cartaoOpts = cartoes.map(c=>`<option value="${c.id}" ${d&&d.cartaoId===c.id?'selected':''}>${c.nome}</option>`).join('');
+  return `
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <input class="form-control" id="fNome" placeholder="Ex: Supermercado, Netflix..." value="${d?d.nome:''}">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Valor Total (R$)</label>
+        <input class="form-control" id="fValor" type="number" step="0.01" placeholder="0,00" value="${d?d.valor:''}" oninput="calcularParcelas()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data de compra</label>
+        <input class="form-control" id="fData" type="date" value="${d?d.data:new Date().toISOString().slice(0,10)}" onchange="calcularParcelas()">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Categoria</label>
+      <select class="form-control" id="fCat" onchange="atualizarCamposCartao()">${catOpts}</select>
+    </div>
+    <div id="grupoCartao" class="form-group hidden">
+      <label class="form-label">Cartão</label>
+      <select class="form-control" id="fCartao" onchange="calcularParcelas()">
+        <option value="">Selecione o cartão</option>
+        ${cartaoOpts}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Parcelado?</label>
+      <div class="toggle-group">
+        <button class="toggle-btn ${!d||d.parcelas<=1?'active red':''}" onclick="setToggle(this,'fParcelado','nao','red');calcularParcelas()">À vista</button>
+        <button class="toggle-btn ${d&&d.parcelas>1?'active red':''}" onclick="setToggle(this,'fParcelado','sim','red');calcularParcelas()">Parcelado</button>
+      </div>
+      <input type="hidden" id="fParcelado" value="${d&&d.parcelas>1?'sim':'nao'}">
+    </div>
+    <div id="grupoParcelas" class="form-group hidden">
+      <label class="form-label">Número de parcelas</label>
+      <input class="form-control" id="fNParcelas" type="number" min="2" max="60" placeholder="Ex: 12" value="${d&&d.parcelas>1?d.parcelas:''}" oninput="calcularParcelas()">
+      <div id="parcelaInfo" class="parcela-info hidden"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Despesa de quem?</label>
+      <div class="toggle-group">
+        <button class="toggle-btn ${!d||!d.terceiro?'active red':''}" onclick="setToggle(this,'fTerceiro','minha','red')">Minha</button>
+        <button class="toggle-btn ${d&&d.terceiro?'active yellow':''}" onclick="setToggle(this,'fTerceiro','terceiro','yellow')">De outro</button>
+      </div>
+      <input type="hidden" id="fTerceiro" value="${d&&d.terceiro?'terceiro':'minha'}">
+    </div>
+    <div id="grupoFixa" class="form-group">
+      <label class="form-label">Lançar nos 12 meses?</label>
+      <div class="toggle-group">
+        <button class="toggle-btn ${!d||!d.fixa?'active red':''}" onclick="setToggle(this,'fFixa','nao','red')">Não</button>
+        <button class="toggle-btn ${d&&d.fixa?'active red':''}" onclick="setToggle(this,'fFixa','sim','red')">Sim (fixa)</button>
+      </div>
+      <input type="hidden" id="fFixa" value="${d&&d.fixa?'sim':'nao'}">
+    </div>
+    <div id="grupoVenc" class="form-group hidden">
+      <label class="form-label">Vencimento</label>
+      <input class="form-control" id="fVenc" type="date" value="${d?d.vencimento:''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <div class="toggle-group">
+        <button class="toggle-btn ${!d||d.status==='pendente'?'active yellow':''}" onclick="setToggle(this,'fStatus','pendente','yellow')">⏳ Pendente</button>
+        <button class="toggle-btn ${d&&d.status==='agendado'?'active blue':''}" onclick="setToggle(this,'fStatus','agendado','blue')">📅 Agendado</button>
+        <button class="toggle-btn ${d&&d.status==='pago'?'active green':''}" onclick="setToggle(this,'fStatus','pago','green')">✅ Pago</button>
+      </div>
+      <input type="hidden" id="fStatus" value="${d?d.status:'pendente'}">
+    </div>
+    <button class="btn-save" onclick="salvarDespesa()">SALVAR DESPESA</button>
+    <button class="btn-cancel" onclick="fecharDrawer()">Cancelar</button>
+  `;
+}
+
+// ========== FORM CARTÃO ==========
+function formCartao(id) {
+  const c = id ? cartoes.find(x=>x.id===id) : null;
+  const dots = CORES_CARTAO.map(cor=>`<div class="color-dot ${c&&c.cor===cor?'selected':''}" style="background:${cor}" onclick="selecionarCorCartao(this,'${cor}')"></div>`).join('');
+  return `
+    <div class="form-group">
+      <label class="form-label">Nome do Cartão</label>
+      <input class="form-control" id="cNome" placeholder="Ex: Visa Bradesco" value="${c?c.nome:''}">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Dia fechamento</label>
+        <input class="form-control" id="cFecha" type="number" min="1" max="28" placeholder="Ex: 12" value="${c?c.fechamento:''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dia vencimento</label>
+        <input class="form-control" id="cVence" type="number" min="1" max="28" placeholder="Ex: 18" value="${c?c.vencimento:''}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Cor do Cartão</label>
+      <div class="cartao-color-pick" id="colorPick">${dots}</div>
+      <input type="hidden" id="cCor" value="${c?c.cor:CORES_CARTAO[0]}">
+    </div>
+    <button class="btn-save" onclick="salvarCartao()">SALVAR CARTÃO</button>
+    <button class="btn-cancel" onclick="fecharDrawer()">Cancelar</button>
+  `;
+}
+
+// ========== HELPERS FORM ==========
+function setToggle(btn, campo, val, cor) {
+  const grupo = btn.parentElement;
+  grupo.querySelectorAll('.toggle-btn').forEach(b => b.className = 'toggle-btn');
+  btn.classList.add('active', cor);
+  document.getElementById(campo).value = val;
+  // mostrar/esconder grupos
+  if (campo === 'fParcelado') {
+    document.getElementById('grupoParcelas').classList.toggle('hidden', val === 'nao');
+  }
+  if (campo === 'fFixa' && document.getElementById('grupoVenc')) {
+    document.getElementById('grupoVenc').classList.toggle('hidden', val === 'sim' || document.getElementById('fCat')?.value === 'Cartão');
+  }
+}
+
+function atualizarCamposCartao() {
+  const cat = document.getElementById('fCat')?.value;
+  if (!cat) return;
+  const eCartao = cat === 'Cartão';
+  document.getElementById('grupoCartao')?.classList.toggle('hidden', !eCartao);
+  document.getElementById('grupoFixa')?.classList.toggle('hidden', eCartao);
+  document.getElementById('grupoVenc')?.classList.toggle('hidden', eCartao || document.getElementById('fFixa')?.value === 'sim');
+  if (eCartao) calcularParcelas();
+}
+
+function calcularParcelas() {
+  const parceladoEl = document.getElementById('fParcelado');
+  const nParcelasEl = document.getElementById('fNParcelas');
+  const valorEl = document.getElementById('fValor');
+  const dataEl = document.getElementById('fData');
+  const cartaoEl = document.getElementById('fCartao');
+  const infoEl = document.getElementById('parcelaInfo');
+  if (!parceladoEl || !infoEl) return;
+
+  const isParcelado = parceladoEl.value === 'sim';
+  const nP = parseInt(nParcelasEl?.value);
+  const valor = parseFloat(valorEl?.value);
+
+  if (!isParcelado || !nP || !valor || nP < 2) { infoEl.classList.add('hidden'); return; }
+
+  const parcela = valor / nP;
+  const dataCompra = new Date(dataEl?.value + 'T12:00:00');
+  let cartaoSel = cartaoEl ? cartoes.find(c => c.id == cartaoEl.value) : null;
+  const cat = document.getElementById('fCat')?.value;
+  if (cat !== 'Cartão') cartaoSel = null;
+
+  let msg = `📦 ${nP}x de R$ ${parcela.toFixed(2).replace('.',',')}`;
+  if (cartaoSel && !isNaN(dataCompra)) {
+    const fechamento = cartaoSel.fechamento;
+    const vencimento = cartaoSel.vencimento;
+    const diaCompra = dataCompra.getDate();
+    let mesInicio = dataCompra.getMonth(); // 0-based
+    if (diaCompra > fechamento) mesInicio += 1;
+    const parcelas1 = MESES_FULL[mesInicio % 12];
+    const parcelas2 = nP > 1 ? MESES_FULL[(mesInicio + nP - 1) % 12] : '';
+    msg += ` • Vence dia ${vencimento} de ${parcelas1}`;
+    if (nP > 1) msg += ` até ${parcelas2}`;
+  }
+  infoEl.textContent = msg;
+  infoEl.classList.remove('hidden');
+}
+
+function selecionarCorCartao(el, cor) {
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('cCor').value = cor;
+}
+
+// ========== SALVAR RECEITA ==========
+function salvarReceita() {
+  const nome = document.getElementById('fNome').value.trim();
+  const valor = parseFloat(document.getElementById('fValor').value);
+  const data = document.getElementById('fData').value;
+  const status = document.getElementById('fStatus').value;
+  const fixa = document.getElementById('fFixa').value === 'sim';
+
+  if (!nome || isNaN(valor) || valor <= 0) { toast('Preencha descrição e valor!','error'); return; }
+
+  if (editandoId) {
+    const idx = dados.findIndex(d => d.id === editandoId);
+    if (idx >= 0) { dados[idx] = {...dados[idx], nome, valor, data, status, fixa}; }
+    toast('✅ Receita atualizada!', 'success');
+  } else if (fixa) {
+    const novos = MESES.map(m => ({id: Date.now() + Math.random(), tipo:'receita', nome, valor, data, status:'pendente', mes:m, fixa:true}));
+    const conflitos = novos.filter(n => dados.some(d => d.tipo==='receita' && d.nome===nome && d.mes===n.mes));
+    if (conflitos.length > 0) {
+      if (!confirm(`Já existe receita "${nome}" em ${conflitos.length} mês(es). Criar assim mesmo?`)) return;
+    }
+    dados.push(...novos);
+    toast('✅ Receita fixa lançada em todos os meses!', 'success');
+  } else {
+    dados.push({id: Date.now(), tipo:'receita', nome, valor, data, status, mes: mesSelecionado, fixa:false});
+    toast('✅ Receita salva!', 'success');
+  }
+  salvar(); fecharDrawer(); atualizar();
+}
+
+// ========== SALVAR DESPESA ==========
+function salvarDespesa() {
+  const nome = document.getElementById('fNome').value.trim();
+  const valor = parseFloat(document.getElementById('fValor').value);
+  const data = document.getElementById('fData').value;
+  const cat = document.getElementById('fCat').value;
+  const status = document.getElementById('fStatus').value;
+  const terceiro = document.getElementById('fTerceiro').value === 'terceiro';
+  const fixa = document.getElementById('fFixa')?.value === 'sim';
+  const parcelado = document.getElementById('fParcelado').value === 'sim';
+  const nParcelas = parcelado ? parseInt(document.getElementById('fNParcelas').value) : 1;
+  const cartaoId = document.getElementById('fCartao')?.value || null;
+  const vencimento = document.getElementById('fVenc')?.value || '';
+
+  if (!nome || isNaN(valor) || valor <= 0) { toast('Preencha descrição e valor!','error'); return; }
+
+  if (editandoId) {
+    const idx = dados.findIndex(d => d.id === editandoId);
+    if (idx >= 0) dados[idx] = {...dados[idx], nome, valor, data, cat, categoria:cat, status, terceiro, vencimento, cartaoId};
+    toast('✅ Despesa atualizada!', 'success');
+    salvar(); fecharDrawer(); atualizar(); return;
+  }
+
+  if (fixa && !parcelado) {
+    const novos = MESES.map(m => ({ id: Date.now()+Math.random(), tipo:'despesa', nome, valor, data, categoria:cat, status:'pendente', mes:m, fixa:true, terceiro, vencimento, cartaoId }));
+    const conflitos = novos.filter(n => dados.some(d => d.tipo==='despesa' && d.nome===nome && d.mes===n.mes));
+    if (conflitos.length > 0) {
+      if (!confirm(`Já existe despesa "${nome}" em ${conflitos.length} mês(es). Criar assim mesmo?`)) return;
+    }
+    dados.push(...novos);
+    toast('✅ Despesa fixa lançada em todos os meses!', 'success');
+  } else if (parcelado && nParcelas >= 2) {
+    const parcela = valor / nParcelas;
+    const dataCompra = new Date(data + 'T12:00:00');
+    const cartaoSel = cartaoId ? cartoes.find(c => c.id == cartaoId) : null;
+    let mesInicio = dataCompra.getMonth();
+    if (cartaoSel && dataCompra.getDate() > cartaoSel.fechamento) mesInicio += 1;
+    for (let i = 0; i < nParcelas; i++) {
+      const mesIdx = (mesInicio + i) % 12;
+      const mesNome = MESES[mesIdx];
+      let vencParcela = vencimento;
+      if (cartaoSel) vencParcela = `dia ${cartaoSel.vencimento}`;
+      dados.push({ id: Date.now()+Math.random(), tipo:'despesa', nome:`${nome} (${i+1}/${nParcelas})`, valor:parcela, data, categoria:cat, status:'pendente', mes:mesNome, fixa:false, terceiro, vencimento:vencParcela, cartaoId, parcelas:nParcelas });
+    }
+    toast(`✅ ${nParcelas} parcelas lançadas!`, 'success');
+  } else {
+    dados.push({ id: Date.now(), tipo:'despesa', nome, valor, data, categoria:cat, status, mes:mesSelecionado, fixa:false, terceiro, vencimento, cartaoId, parcelas:1 });
+    toast('✅ Despesa salva!', 'success');
+  }
+  salvar(); fecharDrawer(); atualizar();
+}
+
+// ========== SALVAR CARTÃO ==========
+function salvarCartao() {
+  const nome = document.getElementById('cNome').value.trim();
+  const fechamento = parseInt(document.getElementById('cFecha').value);
+  const vencimento = parseInt(document.getElementById('cVence').value);
+  const cor = document.getElementById('cCor').value;
+  if (!nome || isNaN(fechamento) || isNaN(vencimento)) { toast('Preencha todos os campos!','error'); return; }
+  if (editandoId) {
+    const idx = cartoes.findIndex(c => c.id === editandoId);
+    if (idx >= 0) cartoes[idx] = {...cartoes[idx], nome, fechamento, vencimento, cor};
+    toast('✅ Cartão atualizado!', 'success');
+  } else {
+    cartoes.push({id: Date.now(), nome, fechamento, vencimento, cor});
+    toast('✅ Cartão salvo!', 'success');
+  }
+  salvar(); fecharDrawer(); renderCartoes();
+}
+
+// ========== EXCLUIR ==========
 function excluir(id) {
-    dados = dados.filter(d => d.id !== id);
-    localStorage.setItem("financeiro_v2", JSON.stringify(dados));
-    atualizar();
+  if (!confirm('Excluir este lançamento?')) return;
+  dados = dados.filter(d => d.id !== id);
+  salvar(); atualizar();
+  toast('🗑️ Excluído!', 'info');
+}
+function excluirCartao(id) {
+  if (!confirm('Excluir este cartão?')) return;
+  cartoes = cartoes.filter(c => c.id !== id);
+  salvar(); renderCartoes();
+  toast('🗑️ Cartão excluído!', 'info');
 }
 
+// ========== MUDAR STATUS ==========
+function mudarStatus(id, novoStatus) {
+  const item = dados.find(d => d.id === id);
+  if (!item) return;
+  item.status = novoStatus;
+  salvar(); atualizar();
+  const labels = {pago:'✅ Marcado como pago!', agendado:'📅 Agendado!', pendente:'⏳ Voltou para pendente!'};
+  toast(labels[novoStatus] || 'Atualizado!', 'success');
+}
+
+// ========== FILTRAR ==========
+function filtrar(status, btn) {
+  filtroAtual = status;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  atualizar();
+}
+
+// ========== RENDERIZAR CARTÕES ==========
+function renderCartoes() {
+  const el = document.getElementById('listaCartoes');
+  if (!cartoes.length) { el.innerHTML = '<div class="list-empty">Nenhum cartão cadastrado</div>'; return; }
+  el.innerHTML = cartoes.map(c => `
+    <div class="cartao-card">
+      <div class="cartao-chip" style="background:${c.cor}"></div>
+      <div class="cartao-info">
+        <div class="cartao-name">${c.nome}</div>
+        <div class="cartao-sub">Fecha dia ${c.fechamento} • Vence dia ${c.vencimento}</div>
+      </div>
+      <div class="cartao-actions">
+        <button class="action-btn btn-edit" onclick="abrirDrawer('cartao',${c.id})">✏️</button>
+        <button class="action-btn btn-del" onclick="excluirCartao(${c.id})">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ========== ATUALIZAR ==========
 function atualizar() {
-    const mes = document.getElementById("selectMes").value;
-    const lista = dados.filter(d => d.mes === mes);
-    
-    const rec = lista.filter(d => d.tipo === 'receita').reduce((a, b) => a + b.valor, 0);
-    const des = lista.filter(d => d.tipo === 'despesa').reduce((a, b) => a + b.valor, 0);
-    const saldo = rec - des;
+  const lista = dados.filter(d => d.mes === mesSelecionado);
+  const minhas = lista.filter(d => d.tipo === 'despesa' && !d.terceiro);
+  const terceiros = lista.filter(d => d.tipo === 'despesa' && d.terceiro);
+  const rec = lista.filter(d => d.tipo === 'receita').reduce((a,b) => a+b.valor, 0);
+  const des = minhas.reduce((a,b) => a+b.valor, 0);
+  const ter = terceiros.reduce((a,b) => a+b.valor, 0);
+  const saldo = rec - des;
 
-    document.getElementById("resumoReceita").innerText = `R$ ${rec.toFixed(2)}`;
-    document.getElementById("resumoDespesa").innerText = `R$ ${des.toFixed(2)}`;
-    const saldoEl = document.getElementById("saldoTotal");
-    saldoEl.innerText = `R$ ${saldo.toFixed(2)}`;
-    saldoEl.className = saldo >= 0 ? "green" : "red";
+  document.getElementById('resumoReceita').textContent = fmt(rec);
+  document.getElementById('resumoDespesa').textContent = fmt(des);
+  const sEl = document.getElementById('saldoTotal');
+  sEl.textContent = fmt(saldo);
+  sEl.className = 'balance-value ' + (saldo >= 0 ? 'pos' : 'neg');
 
-    // Renderizar Lista Filtrada
-    const listaFiltro = lista.filter(d => d.status === filtroAtual);
-    let html = "";
-    listaFiltro.forEach(item => {
-        html += `
-            <div class="card-item">
-                <div>
-                    <strong>${item.nome}</strong><br>
-                    <small>${item.categoria}</small>
-                </div>
-                <div style="text-align:right">
-                    <span class="${item.tipo === 'receita' ? 'green' : 'red'}">R$ ${item.valor.toFixed(2)}</span><br>
-                    <span onclick="excluir(${item.id})" style="cursor:pointer">🗑️</span>
-                </div>
-            </div>
-        `;
-    });
-    document.getElementById("listaPrincipal").innerHTML = html;
-    desenharGrafico(lista);
+  const tStrip = document.getElementById('terceirosStrip');
+  if (ter > 0) { tStrip.classList.remove('hidden'); document.getElementById('terceirosValue').textContent = fmt(ter); }
+  else tStrip.classList.add('hidden');
+
+  renderLista(lista);
+  desenharGrafico(lista);
+}
+
+function fmt(v) { return 'R$ ' + v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+
+function renderLista(lista) {
+  const el = document.getElementById('listaPrincipal');
+  let itens;
+  if (filtroAtual === 'receitas') {
+    itens = lista.filter(d => d.tipo === 'receita');
+  } else {
+    itens = lista.filter(d => d.tipo === 'despesa' && d.status === filtroAtual);
+  }
+  if (!itens.length) { el.innerHTML = '<div class="list-empty">Nada aqui por enquanto 🎉</div>'; return; }
+
+  el.innerHTML = itens.map(item => {
+    const isReceita = item.tipo === 'receita';
+    const isTerceiro = item.terceiro;
+    const iconClass = isReceita ? 'green' : isTerceiro ? 'yellow' : 'red';
+    const icon = isReceita ? '💚' : isTerceiro ? '👤' : '🔴';
+    const valClass = isReceita ? 'green' : isTerceiro ? 'yellow' : 'red';
+    const cardClass = isReceita ? 'receita' : isTerceiro ? 'terceiro' : 'despesa';
+
+    const cartaoNome = item.cartaoId ? (cartoes.find(c=>c.id==item.cartaoId)?.nome || '') : '';
+    const sub = [item.categoria || '', cartaoNome, item.vencimento ? `vence ${item.vencimento}` : ''].filter(Boolean).join(' • ');
+
+    let statusBtns = '';
+    if (!isReceita) {
+      if (item.status !== 'pago') statusBtns += `<button class="action-btn btn-pago" title="Marcar como pago" onclick="mudarStatus(${item.id},'pago')">✅</button>`;
+      if (item.status !== 'agendado') statusBtns += `<button class="action-btn btn-agendado" title="Agendar" onclick="mudarStatus(${item.id},'agendado')">📅</button>`;
+      if (item.status !== 'pendente') statusBtns += `<button class="action-btn btn-pendente" title="Pendente" onclick="mudarStatus(${item.id},'pendente')">⏳</button>`;
+    } else {
+      if (item.status !== 'recebida') statusBtns += `<button class="action-btn btn-pago" title="Marcar como recebida" onclick="mudarStatus(${item.id},'recebida')">✅</button>`;
+      if (item.status !== 'pendente') statusBtns += `<button class="action-btn btn-pendente" title="Pendente" onclick="mudarStatus(${item.id},'pendente')">⏳</button>`;
+    }
+
+    return `
+      <div class="item-card ${cardClass}">
+        <div class="item-icon ${iconClass}">${icon}</div>
+        <div class="item-info">
+          <div class="item-name">${item.nome}</div>
+          <div class="item-sub">
+            ${sub ? `<span>${sub}</span>` : ''}
+            <span class="badge ${item.status}">${item.status}</span>
+            ${isTerceiro ? '<span class="badge terceiro">terceiro</span>' : ''}
+          </div>
+        </div>
+        <div class="item-right">
+          <div class="item-value ${valClass}">${fmt(item.valor)}</div>
+          <div class="item-actions">
+            ${statusBtns}
+            <button class="action-btn btn-edit" onclick="abrirDrawer('${item.tipo}',${item.id})">✏️</button>
+            <button class="action-btn btn-del" onclick="excluir(${item.id})">🗑️</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function desenharGrafico(lista) {
-    const cats = ["Fixa", "Cartão", "Boleto", "Outros"];
-    const valores = cats.map(c => lista.filter(d => d.categoria === c && d.tipo === 'despesa').reduce((a,b) => a + b.valor, 0));
-
-    if (chart) chart.destroy();
-    const ctx = document.getElementById('meuGrafico').getContext('2d');
-    chart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: cats,
-            datasets: [{
-                data: valores,
-                backgroundColor: ['#7c4dff', '#00bcd4', '#ff5252', '#9e9e9e']
-            }]
-        },
-        options: { plugins: { legend: { position: 'right' } } }
-    });
+  const cats = ['Fixa','Cartão','Boleto','Alimentação','Saúde','Transporte','Educação','Lazer','Casa','Outros'];
+  const valores = cats.map(c => lista.filter(d => d.tipo==='despesa' && !d.terceiro && d.categoria===c).reduce((a,b)=>a+b.valor,0));
+  const ativos = cats.map((c,i) => ({c, v:valores[i]})).filter(x=>x.v>0);
+  if (chart) chart.destroy();
+  const ctx = document.getElementById('meuGrafico').getContext('2d');
+  if (!ativos.length) { ctx.clearRect(0,0,300,180); return; }
+  chart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ativos.map(x=>x.c),
+      datasets: [{ data: ativos.map(x=>x.v), backgroundColor: ['#6c63ff','#ef4444','#10b981','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#14b8a6','#f97316','#6b7280'], borderWidth: 0 }]
+    },
+    options: { plugins: { legend: { position:'right', labels:{ font:{family:'Nunito',size:12}, boxWidth:12 } } }, cutout:'65%' }
+  });
 }
 
-atualizar();
+init();
 </script>
 </body>
 </html>
